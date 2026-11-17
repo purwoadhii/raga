@@ -1,0 +1,13 @@
+{
+  "name": "raga",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kumpulan aplikasi. Perintah di bawah menjalankan aplikasi KPI (folder kpi/) di komputer sendiri.",
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "start": "node scripts/start.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

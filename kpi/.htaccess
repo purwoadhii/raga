@@ -1,0 +1,18 @@
+# Pengamanan dasar untuk hosting Apache (cPanel dan sejenisnya).
+
+DirectoryIndex index.php
+
+# File pengaturan dan folder program tidak boleh dibuka lewat browser.
+<FilesMatch "^(config\.php|config\.sample\.php|patch.*\.py)$">
+    Require all denied
+</FilesMatch>
+
+RedirectMatch 404 ^/.*/lib/.*$
+
+Options -Indexes
+
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "same-origin"
+</IfModule>
