@@ -4,6 +4,17 @@ Aplikasi KPI berjenjang: target perusahaan diturunkan dari CEO ke Division Head,
 
 Versi satu file tanpa database ada di folder [`../kpi-demo/`](../kpi-demo/).
 
+## Menjalankan di komputer sendiri
+
+Dari folder utama repository, dengan Node.js, PHP 8, dan MySQL sudah terpasang (misalnya lewat XAMPP, dengan MySQL dinyalakan):
+
+```bash
+npm run setup
+npm start
+```
+
+`npm run setup` membuat database dan tabelnya lalu menulis `config.php`. `npm start` menjalankan aplikasi di `http://localhost:8000` dan membukanya di browser. Penjelasan lengkapnya ada di [README utama](../README.md).
+
 ## Kebutuhan hosting
 
 - PHP 8.0 atau lebih baru, dengan ekstensi **PDO MySQL** (hampir semua hosting sudah ada).
@@ -74,5 +85,5 @@ Menu **Pengaturan** menyediakan unduhan data dalam bentuk JSON. Untuk cadangan y
 | `api.php` | Titik masuk API (JSON) |
 | `install.php` | Halaman pemasangan, hapus setelah selesai |
 | `config.php` | Data koneksi database, dibuat otomatis |
-| `lib/` | Program inti: database, login, hak akses, data contoh |
+| `lib/` | Program inti: database, login, hak akses, pemasangan, data contoh |
 | `assets/` | Tampilan: `app.css`, `app.js`, `logo.png` |

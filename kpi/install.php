@@ -10,6 +10,7 @@ require __DIR__ . '/lib/db.php';
 require __DIR__ . '/lib/schema.php';
 require __DIR__ . '/lib/demo.php';
 require __DIR__ . '/lib/handlers.php';
+require __DIR__ . '/lib/installer.php';
 
 $done  = false;
 $error = '';
@@ -41,63 +42,16 @@ if (!$already && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         if ($cfg['db_name'] === '' || $cfg['db_user'] === '') {
             throw new RuntimeException('Nama database dan nama pengguna database wajib diisi.');
         }
-        $company = trim((string)$f['company']) ?: 'Perusahaan';
-        $year    = (int)$f['year'] ?: (int)date('Y');
-        $mode    = $f['mode'] === 'empty' ? 'empty' : 'demo';
 
         $pdo = kpi_connect($cfg);
 
         // Tabel yang sudah ada akan menolak pemasangan, supaya data lama tidak tertimpa.
-        $exist = [];
-        foreach ($pdo->query('SHOW TABLES') as $row) {
-            $exist[] = strtolower((string)array_values($row)[0]);
-        }
-        $clash = array_intersect($exist, kpi_schema_tables());
-        if ($clash) {
-            throw new RuntimeException('Database ini sudah berisi tabel: ' . implode(', ', $clash)
-                . '. Gunakan database kosong, atau hapus tabel tersebut lebih dulu.');
-        }
+        kpi_install_data($pdo, $f);
 
-        foreach (kpi_schema_statements() as $sql) {
-            $pdo->exec($sql);
-        }
-
-        $set = $pdo->prepare('INSERT INTO settings (skey, svalue) VALUES (?, ?)');
-        $set->execute(['company', $company]);
-        $set->execute(['cap', '120']);
-        $set->execute(['year', (string)$year]);
-        $set->execute(['demo_mode', $mode === 'demo' ? '1' : '0']);
-
-        if ($mode === 'demo') {
-            kpi_seed_demo($pdo, $year);
-            $set->execute(['demo_accounts', json_encode([
-                ['level' => 'CEO', 'username' => 'budi.santoso', 'password' => '1111'],
-                ['level' => 'Division Head', 'username' => 'rina.wijaya', 'password' => '2222'],
-                ['level' => 'Unit Head', 'username' => 'agus.prasetyo', 'password' => '3333'],
-                ['level' => 'Staff', 'username' => 'dewi.lestari', 'password' => '4444'],
-            ], JSON_UNESCAPED_UNICODE)]);
-        } else {
-            $name = trim((string)$f['ceo_name']) ?: 'Direktur Utama';
-            $user = kpi_username_slug((string)$f['ceo_user'] ?: $name);
-            $pass = (string)$f['ceo_pass'];
-            if ($user === '') {
-                throw new RuntimeException('Username CEO wajib diisi.');
-            }
-            if (mb_strlen($pass) < 6) {
-                throw new RuntimeException('Password CEO minimal 6 karakter.');
-            }
-            $ins = $pdo->prepare('INSERT INTO users (name, title, level, parent_id, dept, username, password_hash) VALUES (?,?,?,NULL,?,?,?)');
-            $ins->execute([$name, 'Chief Executive Officer', 'ceo', 'Direksi', $user, password_hash($pass, PASSWORD_DEFAULT)]);
-        }
-
-        $php = "<?php\n// Dibuat otomatis oleh install.php pada " . date('Y-m-d H:i') . "\n"
-             . "// Jangan bagikan file ini: berisi password database.\n"
-             . "return " . var_export($cfg, true) . ";\n";
-        if (@file_put_contents(KPI_CONFIG_FILE, $php) === false) {
+        if (!kpi_write_config($cfg)) {
             throw new RuntimeException('Tidak dapat menulis file config.php. Pastikan folder aplikasi dapat ditulis, '
-                . 'atau buat file config.php secara manual dengan isi berikut:' . "\n\n" . $php);
+                . 'atau buat file config.php secara manual dengan isi berikut:' . "\n\n" . kpi_config_php($cfg));
         }
-        @chmod(KPI_CONFIG_FILE, 0640);
         $done = true;
     } catch (Throwable $e) {
         $error = $e->getMessage();
