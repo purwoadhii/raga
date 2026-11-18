@@ -81,6 +81,16 @@ function kpi_set_setting(string $key, $value): void
     kpi_settings(true);
 }
 
+/** Pesan pemeliharaan bila aplikasi sedang ditutup sementara, selain itu null. */
+function kpi_maintenance_message(): ?string
+{
+    if (kpi_setting('maintenance', '0') !== '1') {
+        return null;
+    }
+    $msg = trim((string)kpi_setting('maintenance_msg', ''));
+    return $msg !== '' ? $msg : 'Aplikasi sedang dalam pemeliharaan. Silakan coba lagi beberapa saat lagi.';
+}
+
 function kpi_log(?string $userId, string $action, string $detail = ''): void
 {
     try {

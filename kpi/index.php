@@ -16,6 +16,25 @@ if (!kpi_is_installed()) {
 }
 
 try {
+    $maintenance = kpi_maintenance_message();
+    if ($maintenance !== null) {
+        http_response_code(503);
+        header('Content-Type: text/html; charset=utf-8');
+        header('Retry-After: 600');
+        header('Cache-Control: no-store');
+        echo '<!doctype html><html lang="id"><meta charset="utf-8">'
+           . '<meta name="viewport" content="width=device-width, initial-scale=1">'
+           . '<meta name="robots" content="noindex, nofollow"><title>Sedang dalam pemeliharaan</title>'
+           . '<style>:root{color-scheme:light dark}body{margin:0;min-height:100vh;display:grid;place-items:center;'
+           . 'font:16px/1.6 system-ui,sans-serif;background:#F3F4F8;color:#151A2E;padding:24px;box-sizing:border-box}'
+           . '@media (prefers-color-scheme:dark){body{background:#0E1120;color:#E7E9F3}div{background:#161A2C!important;border-color:#2B3150!important}}'
+           . 'div{max-width:480px;background:#fff;border:1px solid #DCE0EB;border-radius:14px;padding:28px;text-align:center}'
+           . 'img{width:56px;height:56px}h1{font-size:21px;margin:12px 0 8px}p{margin:0;opacity:.8}</style>'
+           . '<div><img src="assets/logo.png" alt=""><h1>Sedang dalam pemeliharaan</h1><p>'
+           . htmlspecialchars($maintenance, ENT_QUOTES) . '</p></div></html>';
+        exit;
+    }
+
     kpi_session_start();
     $me   = kpi_current_user();
     $boot = $me ? kpi_bootstrap($me) : null;

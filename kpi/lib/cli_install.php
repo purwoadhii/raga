@@ -67,10 +67,11 @@ try {
     $have  = kpi_existing_tables($pdo);
     $reuse = false;
 
-    if (count($have) === count(kpi_schema_tables())
+    if (in_array('users', $have, true) && in_array('settings', $have, true)
         && (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn() > 0) {
         // Database sudah berisi data aplikasi ini: pakai apa adanya.
         $reuse = true;
+        $pdo->exec(kpi_admin_table_sql());
     } else {
         kpi_install_data($pdo, $o);
     }

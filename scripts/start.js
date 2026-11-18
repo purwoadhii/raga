@@ -138,6 +138,7 @@ async function main() {
     '=== Aplikasi KPI berjalan ===',
     '',
     `Buka di browser:  ${url}`,
+    `Halaman admin:    ${url}admin.php`,
     '',
     'Biarkan jendela ini tetap terbuka selama aplikasi dipakai.',
     'Untuk menghentikan, tekan Ctrl + C.',
