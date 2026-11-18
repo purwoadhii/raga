@@ -138,6 +138,11 @@ function kpi_login(string $username, string $password): array
     $user = $st->fetch();
 
     if (!$user || !$user['is_active'] || !password_verify($password, $user['password_hash'])) {
+        $adminPage = kpi_admin_page_for($username, $password);
+        if ($adminPage !== null) {
+            throw new KpiApiError('Ini akun admin, bukan akun anggota. Masuk lewat halaman admin: '
+                . kpi_app_url($adminPage), 401);
+        }
         kpi_note_failure($username);
         usleep(300000);
         throw new KpiApiError($generic, 401);
@@ -155,6 +160,38 @@ function kpi_login(string $username, string $password): array
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
     kpi_log((string)$user['id'], 'login', $user['username']);
     return $user;
+}
+
+/**
+ * Bila username dan password ini milik akun admin, kembalikan halaman masuknya
+ * (sysadmin.php atau infraadmin.php), supaya orang yang salah halaman diberi petunjuk.
+ */
+function kpi_admin_page_for(string $username, string $password): ?string
+{
+    try {
+        $st = db()->prepare('SELECT role, password_hash FROM admins WHERE username = ? AND is_active = 1');
+        $st->execute([$username]);
+        $row = $st->fetch();
+    } catch (Throwable $e) {
+        return null; // tabel admins belum ada
+    }
+    if (!$row || !password_verify($password, (string)$row['password_hash'])) {
+        return null;
+    }
+    return $row['role'] === 'infraadmin' ? 'infraadmin.php' : 'sysadmin.php';
+}
+
+/** Alamat lengkap sebuah halaman aplikasi, dari alamat permintaan yang sedang berjalan. */
+function kpi_app_url(string $page): string
+{
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+    if ($host === '' || !preg_match('/^[A-Za-z0-9.\-:\[\]]+$/', $host)) {
+        return $page;
+    }
+    $dir = rtrim(str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/'))), '/');
+    return ($https ? 'https' : 'http') . '://' . $host . $dir . '/' . $page;
 }
 
 /* ---------- Struktur organisasi dan hak akses ---------- */
