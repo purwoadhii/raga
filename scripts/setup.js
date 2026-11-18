@@ -151,6 +151,14 @@ async function main() {
   } else if (!res.reused) {
     lines.push('', `Masuk dengan username "${o.ceo_user}" dan password yang baru Anda buat.`);
   }
+  if (res.admin) {
+    lines.push(
+      '',
+      'Akun admin (halaman sysadmin.php):',
+      '  username admin    password 123456',
+      '  Segera ganti password ini di menu Akun saya.'
+    );
+  }
   lines.push('', 'Langkah berikutnya:  npm start', '');
   say(lines);
 }

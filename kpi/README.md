@@ -31,7 +31,15 @@ Tiap link hanya menerima akun perannya. Akun infraAdmin yang mencoba masuk lewat
 | **sysAdmin** | Ringkasan, Anggota (tambah, ubah, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Akun admin, Catatan aktivitas |
 | **infraAdmin** | Status server (PHP, database, HTTPS, izin file, ruang disk), Cadangan database (.sql), Mode pemeliharaan, Catatan aktivitas dan pembersihannya |
 
-**Pertama kali** membuka salah satu link admin, Anda diminta membuat akun admin. Untuk membuktikan Anda berhak, masukkan username dan password CEO, lalu buat akun sysAdmin dan (boleh juga) infraAdmin. Setelah itu sysAdmin bisa menambah admin lain dari menu **Akun admin**.
+**Akun admin bawaan.** Saat aplikasi disiapkan, satu akun sysAdmin dibuat otomatis:
+
+| Username | Password | Link |
+| --- | --- | --- |
+| `admin` | `123456` | `sysadmin.php` |
+
+Segera ganti password ini di menu **Akun saya**. Selama belum diganti, halaman admin menampilkan pengingat dan Status server infraAdmin menandainya. Akun infraAdmin dibuat oleh sysAdmin dari menu **Akun admin**.
+
+Akun bawaan hanya dibuat sekali. Bila Anda menghapusnya, akun itu tidak muncul lagi. Bila semua akun admin terhapus, halaman admin meminta username dan password CEO sebagai bukti lalu membuat akun admin baru.
 
 Aturan pengaman:
 
