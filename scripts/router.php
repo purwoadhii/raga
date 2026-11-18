@@ -17,4 +17,15 @@ if (preg_match('#^/+lib(/|$)#i', $path)
     return true;
 }
 
+// Alamat pendek halaman admin: /sysAdmin dan /infraAdmin (huruf besar kecil bebas, boleh diakhiri garis miring).
+$short = ['sysadmin' => 'sysadmin.php', 'infraadmin' => 'infraadmin.php'];
+if (preg_match('#^/+(sysadmin|infraadmin)/*$#i', $path, $m)) {
+    $file = dirname(__DIR__) . '/kpi/' . $short[strtolower($m[1])];
+    $_SERVER['SCRIPT_NAME']     = '/' . $short[strtolower($m[1])];
+    $_SERVER['SCRIPT_FILENAME'] = $file;
+    $_SERVER['PHP_SELF']        = $_SERVER['SCRIPT_NAME'];
+    require $file;
+    return true;
+}
+
 return false; // layani file apa adanya

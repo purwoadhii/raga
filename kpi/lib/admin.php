@@ -16,8 +16,14 @@ const KPI_ADMIN_ROLES = [
 ];
 const KPI_ADMIN_MIN_PASS = 8;
 
-/** Halaman masuk tiap peran. */
+/** Alamat pendek tiap peran, misalnya http://localhost:8000/sysAdmin. */
 const KPI_ADMIN_LINKS = [
+    'sysadmin'   => 'sysAdmin',
+    'infraadmin' => 'infraAdmin',
+];
+
+/** File di balik alamat pendek. Tetap bisa dibuka langsung bila server tidak mendukung alamat pendek. */
+const KPI_ADMIN_FILES = [
     'sysadmin'   => 'sysadmin.php',
     'infraadmin' => 'infraadmin.php',
 ];
@@ -153,8 +159,8 @@ function kpi_admin_login(string $username, string $password): array
     }
     kpi_clear_failures($key);
     if (KPI_ADMIN_GATE !== null && $row['role'] !== KPI_ADMIN_GATE) {
-        throw new KpiApiError('Akun ini adalah ' . KPI_ADMIN_ROLES[$row['role']] . '. Silakan masuk lewat link '
-            . KPI_ADMIN_LINKS[$row['role']] . '.', 403);
+        throw new KpiApiError('Akun ini adalah ' . KPI_ADMIN_ROLES[$row['role']] . '. Silakan masuk lewat alamat '
+            . kpi_app_url(KPI_ADMIN_LINKS[$row['role']]), 403);
     }
     kpi_admin_session_start();
     session_regenerate_id(true);

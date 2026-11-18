@@ -9,6 +9,13 @@ DirectoryIndex index.php
 
 RedirectMatch 404 ^/.*/lib/.*$
 
+# Alamat pendek halaman admin: /sysAdmin dan /infraAdmin.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^sysAdmin/?$ sysadmin.php [NC,QSA,L]
+    RewriteRule ^infraAdmin/?$ infraadmin.php [NC,QSA,L]
+</IfModule>
+
 Options -Indexes
 
 <IfModule mod_headers.c>

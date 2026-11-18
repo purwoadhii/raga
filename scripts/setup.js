@@ -154,7 +154,7 @@ async function main() {
   if (res.admin) {
     lines.push(
       '',
-      'Akun admin (halaman sysadmin.php):',
+      'Akun admin (alamat /sysAdmin):',
       '  username admin    password 123456',
       '  Segera ganti password ini di menu Akun saya.'
     );
