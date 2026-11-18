@@ -37,12 +37,15 @@ npm start
 | `npm run setup` | Membuat database dan tabel, mengisi data awal, dan menulis `kpi/config.php`. Cukup sekali. Tekan Enter di setiap pertanyaan untuk memakai nilai bawaan XAMPP (pengguna `root`, tanpa password, database `kpi`) |
 | `npm start` | Menjalankan aplikasi dan membukanya di browser, di alamat `http://localhost:8000` |
 
-Setelah `npm start`, ada dua alamat:
+Setelah `npm start`, ada tiga alamat:
 
 | Alamat | Untuk |
 | --- | --- |
 | `http://localhost:8000` | Aplikasi KPI, untuk CEO, Division Head, Unit Head, dan Staff |
-| `http://localhost:8000/admin.php` | Halaman admin, untuk sysAdmin dan infraAdmin. Penjelasannya di [kpi/README.md](kpi/README.md#halaman-admin) |
+| `http://localhost:8000/sysadmin.php` | sysAdmin: anggota, pengaturan aplikasi, akun admin |
+| `http://localhost:8000/infraadmin.php` | infraAdmin: status server, cadangan database, mode pemeliharaan |
+
+Penjelasan halaman admin ada di [kpi/README.md](kpi/README.md#halaman-admin).
 
 Tidak perlu `npm install`, karena tidak ada paket tambahan yang dipakai. `npm run setup` aman dijalankan lagi: bila aplikasi sudah disiapkan, datanya tidak diubah.
 

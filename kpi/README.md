@@ -17,14 +17,21 @@ npm start
 
 ## Halaman admin
 
-Pengelolaan aplikasi punya alamat sendiri: **`/admin.php`** (contoh: `http://localhost:8000/admin.php` atau `https://domain-anda.com/kpi/admin.php`). Akunnya terpisah dari akun anggota, tidak punya KPI, dan tidak muncul di aplikasi.
+Pengelolaan aplikasi punya link sendiri untuk tiap peran. Akunnya terpisah dari akun anggota, tidak punya KPI, dan tidak muncul di aplikasi.
+
+| Peran | Link di komputer sendiri | Link di hosting |
+| --- | --- | --- |
+| sysAdmin | `http://localhost:8000/sysadmin.php` | `https://domain-anda.com/kpi/sysadmin.php` |
+| infraAdmin | `http://localhost:8000/infraadmin.php` | `https://domain-anda.com/kpi/infraadmin.php` |
+
+Tiap link hanya menerima akun perannya. Akun infraAdmin yang mencoba masuk lewat link sysAdmin ditolak, dan sebaliknya. Sesinya juga terpisah, jadi keduanya bisa masuk bersamaan di satu browser. Link umum `admin.php` tetap ada dan menerima kedua peran.
 
 | Peran | Menu |
 | --- | --- |
 | **sysAdmin** | Ringkasan, Anggota (tambah, ubah, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Akun admin, Catatan aktivitas |
 | **infraAdmin** | Status server (PHP, database, HTTPS, izin file, ruang disk), Cadangan database (.sql), Mode pemeliharaan, Catatan aktivitas dan pembersihannya |
 
-**Pertama kali** membuka `/admin.php`, Anda diminta membuat akun admin. Untuk membuktikan Anda berhak, masukkan username dan password CEO, lalu buat akun sysAdmin dan (boleh juga) infraAdmin. Setelah itu sysAdmin bisa menambah admin lain dari menu **Akun admin**.
+**Pertama kali** membuka salah satu link admin, Anda diminta membuat akun admin. Untuk membuktikan Anda berhak, masukkan username dan password CEO, lalu buat akun sysAdmin dan (boleh juga) infraAdmin. Setelah itu sysAdmin bisa menambah admin lain dari menu **Akun admin**.
 
 Aturan pengaman:
 
@@ -102,7 +109,8 @@ Menu **Pengaturan** menyediakan unduhan data dalam bentuk JSON. Untuk cadangan y
 | --- | --- |
 | `index.php` | Halaman aplikasi |
 | `api.php` | Titik masuk API (JSON) |
-| `admin.php` | Halaman admin untuk sysAdmin dan infraAdmin |
+| `sysadmin.php`, `infraadmin.php` | Link masuk khusus tiap peran admin |
+| `admin.php` | Halaman admin, dipakai oleh kedua link di atas |
 | `install.php` | Halaman pemasangan, hapus setelah selesai |
 | `config.php` | Data koneksi database, dibuat otomatis |
 | `lib/` | Program inti: database, login, hak akses, pemasangan, data contoh |
