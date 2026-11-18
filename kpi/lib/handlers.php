@@ -193,6 +193,104 @@ function kpi_bootstrap(array $viewer): array
 
 /* ---------- Aksi ---------- */
 
+/* ---------- Kelola anggota (dipakai API dan halaman admin) ---------- */
+
+/** Menambah atau mengubah anggota. Mengembalikan [id, username]. */
+function kpi_user_save(array $in): array
+{
+    $db    = db();
+    $id    = in_id($in, 'id', false);
+    $name  = in_str($in, 'name', 120);
+    $title = in_str($in, 'title', 120);
+    $dept  = in_str($in, 'dept', 120);
+    $pass  = (string)($in['password'] ?? '');
+    if ($name === '') {
+        throw new KpiApiError('Nama wajib diisi.');
+    }
+    $username = kpi_username_slug(in_str($in, 'username', 64) ?: $name);
+    if ($username === '') {
+        throw new KpiApiError('Username wajib diisi dengan huruf atau angka.');
+    }
+    $chk = $db->prepare('SELECT id FROM users WHERE username = ? AND id <> ?');
+    $chk->execute([$username, $id ?: 0]);
+    if ($chk->fetchColumn()) {
+        throw new KpiApiError('Username "' . $username . '" sudah dipakai. Gunakan username lain.');
+    }
+    $users = kpi_all_users();
+
+    if ($id) {
+        if (!isset($users[$id])) {
+            throw new KpiApiError('Anggota tidak ditemukan.', 404);
+        }
+        $cur      = $users[$id];
+        $parentId = in_id($in, 'parentId', false);
+        if ($parentId !== null && $cur['parent_id'] !== null && $parentId !== (int)$cur['parent_id']) {
+            if (!isset($users[$parentId])) {
+                throw new KpiApiError('Atasan tidak ditemukan.', 404);
+            }
+            if ($users[$parentId]['level'] !== $users[(int)$cur['parent_id']]['level']) {
+                throw new KpiApiError('Atasan baru harus berada di level yang sama dengan atasan sebelumnya.');
+            }
+            if ($parentId === $id || kpi_is_ancestor($id, $parentId)) {
+                throw new KpiApiError('Atasan tidak boleh berasal dari bawahannya sendiri.');
+            }
+            // KPI yang terhubung ke atasan lama dilepas.
+            $db->prepare('UPDATE kpis SET parent_id = NULL WHERE owner_id = ?')->execute([$id]);
+            $db->prepare('UPDATE users SET parent_id = ? WHERE id = ?')->execute([$parentId, $id]);
+        }
+        $up = $db->prepare('UPDATE users SET name=?, title=?, dept=?, username=? WHERE id=?');
+        $up->execute([$name, $title, $dept, $username, $id]);
+        if ($pass !== '') {
+            if (mb_strlen($pass) < 4) {
+                throw new KpiApiError('Password minimal 4 karakter.');
+            }
+            $db->prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+               ->execute([password_hash($pass, PASSWORD_DEFAULT), $id]);
+        }
+    } else {
+        $parentId = in_id($in, 'parentId');
+        if (!isset($users[$parentId])) {
+            throw new KpiApiError('Pilih atasan terlebih dahulu.');
+        }
+        $level = KPI_CHILD_LEVEL[$users[$parentId]['level']] ?? null;
+        if ($level === null) {
+            throw new KpiApiError('Staff tidak dapat memiliki bawahan.');
+        }
+        if (mb_strlen($pass) < 4) {
+            throw new KpiApiError('Password minimal 4 karakter.');
+        }
+        $up = $db->prepare('INSERT INTO users (name, title, level, parent_id, dept, username, password_hash) VALUES (?,?,?,?,?,?,?)');
+        $up->execute([
+            $name,
+            $title ?: ucfirst($level),
+            $level,
+            $parentId,
+            $dept ?: $users[$parentId]['dept'],
+            $username,
+            password_hash($pass, PASSWORD_DEFAULT),
+        ]);
+        $id = (int)$db->lastInsertId();
+    }
+    kpi_all_users(true);
+    return [$id, $username];
+}
+
+/** Menghapus anggota yang tidak punya bawahan. */
+function kpi_user_delete(int $id): void
+{
+    $users = kpi_all_users();
+    if (!isset($users[$id])) {
+        throw new KpiApiError('Anggota tidak ditemukan.', 404);
+    }
+    foreach ($users as $u) {
+        if ((int)($u['parent_id'] ?? 0) === $id) {
+            throw new KpiApiError('Pindahkan dulu bawahannya ke atasan lain sebelum menghapus.');
+        }
+    }
+    db()->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
+    kpi_all_users(true);
+}
+
 function kpi_handle(string $action, array $in): array
 {
     switch ($action) {
@@ -435,80 +533,7 @@ function kpi_handle(string $action, array $in): array
         case 'user_save': {
             $me = kpi_require_user();
             kpi_require_ceo($me);
-            $db    = db();
-            $id    = in_id($in, 'id', false);
-            $name  = in_str($in, 'name', 120);
-            $title = in_str($in, 'title', 120);
-            $dept  = in_str($in, 'dept', 120);
-            $pass  = (string)($in['password'] ?? '');
-            if ($name === '') {
-                throw new KpiApiError('Nama wajib diisi.');
-            }
-            $username = kpi_username_slug(in_str($in, 'username', 64) ?: $name);
-            if ($username === '') {
-                throw new KpiApiError('Username wajib diisi dengan huruf atau angka.');
-            }
-            $chk = $db->prepare('SELECT id FROM users WHERE username = ? AND id <> ?');
-            $chk->execute([$username, $id ?: 0]);
-            if ($chk->fetchColumn()) {
-                throw new KpiApiError('Username "' . $username . '" sudah dipakai. Gunakan username lain.');
-            }
-            $users = kpi_all_users();
-
-            if ($id) {
-                if (!isset($users[$id])) {
-                    throw new KpiApiError('Anggota tidak ditemukan.', 404);
-                }
-                $cur      = $users[$id];
-                $parentId = in_id($in, 'parentId', false);
-                if ($parentId !== null && $cur['parent_id'] !== null && $parentId !== (int)$cur['parent_id']) {
-                    if (!isset($users[$parentId])) {
-                        throw new KpiApiError('Atasan tidak ditemukan.', 404);
-                    }
-                    if ($users[$parentId]['level'] !== $users[(int)$cur['parent_id']]['level']) {
-                        throw new KpiApiError('Atasan baru harus berada di level yang sama dengan atasan sebelumnya.');
-                    }
-                    if ($parentId === $id || kpi_is_ancestor($id, $parentId)) {
-                        throw new KpiApiError('Atasan tidak boleh berasal dari bawahannya sendiri.');
-                    }
-                    // KPI yang terhubung ke atasan lama dilepas.
-                    $db->prepare('UPDATE kpis SET parent_id = NULL WHERE owner_id = ?')->execute([$id]);
-                    $db->prepare('UPDATE users SET parent_id = ? WHERE id = ?')->execute([$parentId, $id]);
-                }
-                $up = $db->prepare('UPDATE users SET name=?, title=?, dept=?, username=? WHERE id=?');
-                $up->execute([$name, $title, $dept, $username, $id]);
-                if ($pass !== '') {
-                    if (mb_strlen($pass) < 4) {
-                        throw new KpiApiError('Password minimal 4 karakter.');
-                    }
-                    $db->prepare('UPDATE users SET password_hash = ? WHERE id = ?')
-                       ->execute([password_hash($pass, PASSWORD_DEFAULT), $id]);
-                }
-            } else {
-                $parentId = in_id($in, 'parentId');
-                if (!isset($users[$parentId])) {
-                    throw new KpiApiError('Pilih atasan terlebih dahulu.');
-                }
-                $level = KPI_CHILD_LEVEL[$users[$parentId]['level']] ?? null;
-                if ($level === null) {
-                    throw new KpiApiError('Staff tidak dapat memiliki bawahan.');
-                }
-                if (mb_strlen($pass) < 4) {
-                    throw new KpiApiError('Password minimal 4 karakter.');
-                }
-                $up = $db->prepare('INSERT INTO users (name, title, level, parent_id, dept, username, password_hash) VALUES (?,?,?,?,?,?,?)');
-                $up->execute([
-                    $name,
-                    $title ?: ucfirst($level),
-                    $level,
-                    $parentId,
-                    $dept ?: $users[$parentId]['dept'],
-                    $username,
-                    password_hash($pass, PASSWORD_DEFAULT),
-                ]);
-                $id = (int)$db->lastInsertId();
-            }
-            kpi_all_users(true);
+            [$id, $username] = kpi_user_save($in);
             kpi_log((string)$me['id'], 'user_save', "user=$id username=$username");
             return ['data' => kpi_bootstrap($me)];
         }
@@ -520,17 +545,7 @@ function kpi_handle(string $action, array $in): array
             if ($id === (int)$me['id']) {
                 throw new KpiApiError('Anda tidak dapat menghapus akun Anda sendiri.');
             }
-            $users = kpi_all_users();
-            if (!isset($users[$id])) {
-                throw new KpiApiError('Anggota tidak ditemukan.', 404);
-            }
-            foreach ($users as $u) {
-                if ((int)($u['parent_id'] ?? 0) === $id) {
-                    throw new KpiApiError('Pindahkan dulu bawahannya ke atasan lain sebelum menghapus.');
-                }
-            }
-            db()->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
-            kpi_all_users(true);
+            kpi_user_delete($id);
             kpi_log((string)$me['id'], 'user_delete', "user=$id");
             return ['data' => kpi_bootstrap($me)];
         }

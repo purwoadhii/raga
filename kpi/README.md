@@ -15,6 +15,25 @@ npm start
 
 `npm run setup` membuat database dan tabelnya lalu menulis `config.php`. `npm start` menjalankan aplikasi di `http://localhost:8000` dan membukanya di browser. Penjelasan lengkapnya ada di [README utama](../README.md).
 
+## Halaman admin
+
+Pengelolaan aplikasi punya alamat sendiri: **`/admin.php`** (contoh: `http://localhost:8000/admin.php` atau `https://domain-anda.com/kpi/admin.php`). Akunnya terpisah dari akun anggota, tidak punya KPI, dan tidak muncul di aplikasi.
+
+| Peran | Menu |
+| --- | --- |
+| **sysAdmin** | Ringkasan, Anggota (tambah, ubah, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Akun admin, Catatan aktivitas |
+| **infraAdmin** | Status server (PHP, database, HTTPS, izin file, ruang disk), Cadangan database (.sql), Mode pemeliharaan, Catatan aktivitas dan pembersihannya |
+
+**Pertama kali** membuka `/admin.php`, Anda diminta membuat akun admin. Untuk membuktikan Anda berhak, masukkan username dan password CEO, lalu buat akun sysAdmin dan (boleh juga) infraAdmin. Setelah itu sysAdmin bisa menambah admin lain dari menu **Akun admin**.
+
+Aturan pengaman:
+
+- Password admin minimal 8 karakter. Sesi admin berakhir sendiri setelah 60 menit tanpa kegiatan.
+- Setiap peran hanya bisa membuka menunya sendiri, dan server menolak tindakan di luar perannya.
+- Harus selalu ada minimal satu sysAdmin aktif. Akun CEO tidak bisa dihapus, dan CEO satu-satunya tidak bisa dinonaktifkan.
+- Saat mode pemeliharaan aktif, aplikasi menampilkan halaman pemberitahuan dan tidak ada yang bisa masuk, tetapi halaman admin tetap bisa dibuka.
+- Semua tindakan admin tercatat di Catatan aktivitas.
+
 ## Kebutuhan hosting
 
 - PHP 8.0 atau lebih baru, dengan ekstensi **PDO MySQL** (hampir semua hosting sudah ada).
@@ -83,7 +102,8 @@ Menu **Pengaturan** menyediakan unduhan data dalam bentuk JSON. Untuk cadangan y
 | --- | --- |
 | `index.php` | Halaman aplikasi |
 | `api.php` | Titik masuk API (JSON) |
+| `admin.php` | Halaman admin untuk sysAdmin dan infraAdmin |
 | `install.php` | Halaman pemasangan, hapus setelah selesai |
 | `config.php` | Data koneksi database, dibuat otomatis |
 | `lib/` | Program inti: database, login, hak akses, pemasangan, data contoh |
-| `assets/` | Tampilan: `app.css`, `app.js`, `logo.png` |
+| `assets/` | Tampilan: `app.css`, `app.js`, `admin.css`, `logo.png` |

@@ -63,6 +63,7 @@ async function api(action,payload){
 function apiFail(e){
   if(e.status===419){toast('Sesi berakhir, halaman dimuat ulang.');setTimeout(()=>location.reload(),1200);return}
   if(e.status===401){S=null;render();toast(e.message);return}
+  if(e.status===503){toast(e.message);setTimeout(()=>location.reload(),1500);return}
   toast(e.message);
 }
 /** Jalankan aksi; galat tampil sebagai pesan singkat. */

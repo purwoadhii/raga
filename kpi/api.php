@@ -26,6 +26,11 @@ if (!kpi_is_installed()) {
 }
 
 try {
+    $maintenance = kpi_maintenance_message();
+    if ($maintenance !== null) {
+        kpi_fail($maintenance, 503);
+    }
+
     kpi_session_start();
 
     $isGet    = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET';

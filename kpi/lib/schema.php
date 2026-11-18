@@ -80,11 +80,32 @@ function kpi_schema_statements(): array
         KEY ix_activity_created (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
+    $s[] = kpi_admin_table_sql();
+
     return $s;
+}
+
+/**
+ * Akun pengelola (sysAdmin dan infraAdmin), terpisah dari anggota organisasi.
+ * Memakai IF NOT EXISTS supaya pemasangan lama ikut mendapat tabel ini.
+ */
+function kpi_admin_table_sql(): string
+{
+    return "CREATE TABLE IF NOT EXISTS admins (
+        id            INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        name          VARCHAR(120) NOT NULL,
+        username      VARCHAR(64)  NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        role          VARCHAR(12)  NOT NULL,
+        is_active     TINYINT NOT NULL DEFAULT 1,
+        last_login_at DATETIME NULL DEFAULT NULL,
+        created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY ux_admins_username (username)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 }
 
 /** Urutan hapus tabel (anak lebih dulu). */
 function kpi_schema_tables(): array
 {
-    return ['activity', 'login_attempts', 'actuals', 'kpis', 'users', 'settings'];
+    return ['admins', 'activity', 'login_attempts', 'actuals', 'kpis', 'users', 'settings'];
 }
