@@ -71,6 +71,8 @@ function kpi_install_data(PDO $pdo, array $o): void
         $ins = $pdo->prepare('INSERT INTO users (name, title, level, parent_id, dept, username, password_hash) VALUES (?,?,?,NULL,?,?,?)');
         $ins->execute([$name, 'Chief Executive Officer', 'ceo', 'Direksi', $user, password_hash($pass, PASSWORD_DEFAULT)]);
     }
+
+    kpi_admin_seed_default($pdo);
 }
 
 /** Isi file config.php untuk data koneksi yang diberikan. */

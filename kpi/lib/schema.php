@@ -104,6 +104,43 @@ function kpi_admin_table_sql(): string
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 }
 
+/** Akun admin bawaan, dibuat sekali saat pemasangan. Password wajib diganti sebelum dipakai sungguhan. */
+const KPI_DEFAULT_ADMIN = [
+    'name'     => 'Administrator',
+    'username' => 'admin',
+    'password' => '123456',
+    'role'     => 'sysadmin',
+];
+
+/**
+ * Membuat akun admin bawaan satu kali saja. Bila nanti dihapus, akun ini tidak dibuat ulang.
+ * Mengembalikan true bila akun baru saja dibuat.
+ */
+function kpi_admin_seed_default(PDO $pdo): bool
+{
+    $pdo->exec(kpi_admin_table_sql());
+    $st = $pdo->prepare('SELECT svalue FROM settings WHERE skey = ?');
+    $st->execute(['default_admin_created']);
+    if ($st->fetchColumn() !== false) {
+        return false;
+    }
+    $chk = $pdo->prepare('SELECT COUNT(*) FROM admins WHERE username = ?');
+    $chk->execute([KPI_DEFAULT_ADMIN['username']]);
+    $created = false;
+    if ((int)$chk->fetchColumn() === 0) {
+        $pdo->prepare('INSERT INTO admins (name, username, password_hash, role) VALUES (?,?,?,?)')->execute([
+            KPI_DEFAULT_ADMIN['name'],
+            KPI_DEFAULT_ADMIN['username'],
+            password_hash(KPI_DEFAULT_ADMIN['password'], PASSWORD_DEFAULT),
+            KPI_DEFAULT_ADMIN['role'],
+        ]);
+        $created = true;
+    }
+    $pdo->prepare('INSERT INTO settings (skey, svalue) VALUES (?, ?) ON DUPLICATE KEY UPDATE svalue = VALUES(svalue)')
+        ->execute(['default_admin_created', date('Y-m-d H:i')]);
+    return $created;
+}
+
 /** Urutan hapus tabel (anak lebih dulu). */
 function kpi_schema_tables(): array
 {

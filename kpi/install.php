@@ -120,10 +120,11 @@ a{color:var(--accent)}
 <?php elseif ($done): ?>
   <div class="card">
     <div class="msg good">Pemasangan selesai.</div>
-    <h2>Dua langkah terakhir</h2>
+    <h2>Tiga langkah terakhir</h2>
     <ol class="steps">
       <li>Hapus file <code>install.php</code> dari server, supaya tidak bisa dipakai orang lain.</li>
       <li>Masuk ke aplikasi, lalu ganti password lewat menu <b>Pengaturan</b>.</li>
+      <li>Masuk ke <a href="sysadmin.php">halaman sysAdmin</a> dengan username <code>admin</code> dan password <code>123456</code>, lalu segera ganti password itu di menu <b>Akun saya</b>.</li>
     </ol>
     <p><a href="index.php">Buka aplikasi sekarang</a></p>
   </div>
