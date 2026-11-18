@@ -45,7 +45,14 @@ Setelah `npm start`, ada tiga alamat:
 | `http://localhost:8000/sysAdmin` | sysAdmin: anggota, pengaturan aplikasi, akun admin |
 | `http://localhost:8000/infraAdmin` | infraAdmin: status server, cadangan database, mode pemeliharaan |
 
-Akun admin bawaan: username `admin`, password `123456`, masuk lewat link sysAdmin. Segera ganti passwordnya di menu **Akun saya**. Penjelasan halaman admin ada di [kpi/README.md](kpi/README.md#halaman-admin).
+Akun admin bawaan:
+
+| Alamat | Username | Password |
+| --- | --- | --- |
+| `/sysAdmin` | `admin` | `123456` |
+| `/infraAdmin` | `infraadmin` | `12345678` |
+
+Segera ganti kedua password itu di menu **Akun saya**. Penjelasan halaman admin ada di [kpi/README.md](kpi/README.md#halaman-admin).
 
 Tidak perlu `npm install`, karena tidak ada paket tambahan yang dipakai. `npm run setup` aman dijalankan lagi: bila aplikasi sudah disiapkan, datanya tidak diubah.
 

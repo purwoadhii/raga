@@ -151,13 +151,14 @@ async function main() {
   } else if (!res.reused) {
     lines.push('', `Masuk dengan username "${o.ceo_user}" dan password yang baru Anda buat.`);
   }
-  if (res.admin) {
-    lines.push(
-      '',
-      'Akun admin (alamat /sysAdmin):',
-      '  username admin    password 123456',
-      '  Segera ganti password ini di menu Akun saya.'
-    );
+  const admins = res.admins && typeof res.admins === 'object' ? res.admins : {};
+  const pages = { admin: '/sysAdmin', infraadmin: '/infraAdmin' };
+  if (Object.keys(admins).length) {
+    lines.push('', 'Akun admin bawaan:');
+    for (const [user, pass] of Object.entries(admins)) {
+      lines.push(`  ${(pages[user] || '').padEnd(12)} username ${user.padEnd(11)} password ${pass}`);
+    }
+    lines.push('  Segera ganti password ini di menu Akun saya.');
   }
   lines.push('', 'Langkah berikutnya:  npm start', '');
   say(lines);
