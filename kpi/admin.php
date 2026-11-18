@@ -16,8 +16,19 @@ require __DIR__ . '/lib/auth.php';
 require __DIR__ . '/lib/admin.php';
 require __DIR__ . '/lib/admin_views.php';
 
-/** Halaman yang sedang dipakai: sysadmin.php, infraadmin.php, atau admin.php. */
-define('ADM_SELF', KPI_ADMIN_GATE !== null ? KPI_ADMIN_LINKS[KPI_ADMIN_GATE] : 'admin.php');
+/**
+ * Halaman yang sedang dipakai, untuk semua tautan, formulir, dan pengalihan:
+ * sysAdmin atau infraAdmin bila dibuka lewat alamat pendek, selain itu nama filenya.
+ */
+$admPath = (string)parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
+if (KPI_ADMIN_GATE !== null && preg_match('#/' . KPI_ADMIN_LINKS[KPI_ADMIN_GATE] . '/+$#i', $admPath)) {
+    // /sysAdmin/ dialihkan ke /sysAdmin supaya alamat gambar dan gaya tetap benar.
+    $qs = (string)($_SERVER['QUERY_STRING'] ?? '');
+    header('Location: ' . rtrim($admPath, '/') . ($qs !== '' ? '?' . $qs : ''), true, 301);
+    exit;
+}
+define('ADM_SELF', KPI_ADMIN_GATE === null ? 'admin.php'
+    : (preg_match('#\.php$#i', $admPath) ? KPI_ADMIN_FILES[KPI_ADMIN_GATE] : KPI_ADMIN_LINKS[KPI_ADMIN_GATE]));
 
 if (!kpi_is_installed()) {
     header('Location: install.php');

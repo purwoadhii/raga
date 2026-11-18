@@ -164,7 +164,7 @@ function kpi_login(string $username, string $password): array
 
 /**
  * Bila username dan password ini milik akun admin, kembalikan halaman masuknya
- * (sysadmin.php atau infraadmin.php), supaya orang yang salah halaman diberi petunjuk.
+ * (sysAdmin atau infraAdmin), supaya orang yang salah halaman diberi petunjuk.
  */
 function kpi_admin_page_for(string $username, string $password): ?string
 {
@@ -178,7 +178,7 @@ function kpi_admin_page_for(string $username, string $password): ?string
     if (!$row || !password_verify($password, (string)$row['password_hash'])) {
         return null;
     }
-    return $row['role'] === 'infraadmin' ? 'infraadmin.php' : 'sysadmin.php';
+    return $row['role'] === 'infraadmin' ? 'infraAdmin' : 'sysAdmin';
 }
 
 /** Alamat lengkap sebuah halaman aplikasi, dari alamat permintaan yang sedang berjalan. */

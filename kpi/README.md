@@ -21,8 +21,10 @@ Pengelolaan aplikasi punya link sendiri untuk tiap peran. Akunnya terpisah dari 
 
 | Peran | Link di komputer sendiri | Link di hosting |
 | --- | --- | --- |
-| sysAdmin | `http://localhost:8000/sysadmin.php` | `https://domain-anda.com/kpi/sysadmin.php` |
-| infraAdmin | `http://localhost:8000/infraadmin.php` | `https://domain-anda.com/kpi/infraadmin.php` |
+| sysAdmin | `http://localhost:8000/sysAdmin` | `https://domain-anda.com/kpi/sysAdmin` |
+| infraAdmin | `http://localhost:8000/infraAdmin` | `https://domain-anda.com/kpi/infraAdmin` |
+
+Alamat pendek di hosting memakai `mod_rewrite` (aturannya sudah ada di `.htaccess`, dan hampir semua hosting cPanel mengaktifkannya). Bila hosting Anda tidak mendukungnya, pakai alamat berakhiran `.php`: `sysadmin.php` dan `infraadmin.php`.
 
 Tiap link hanya menerima akun perannya. Akun infraAdmin yang mencoba masuk lewat link sysAdmin ditolak, dan sebaliknya. Sesinya juga terpisah, jadi keduanya bisa masuk bersamaan di satu browser. Link umum `admin.php` tetap ada dan menerima kedua peran.
 
@@ -35,7 +37,7 @@ Tiap link hanya menerima akun perannya. Akun infraAdmin yang mencoba masuk lewat
 
 | Username | Password | Link |
 | --- | --- | --- |
-| `admin` | `123456` | `sysadmin.php` |
+| `admin` | `123456` | `/sysAdmin` |
 
 Segera ganti password ini di menu **Akun saya**. Selama belum diganti, halaman admin menampilkan pengingat dan Status server infraAdmin menandainya. Akun infraAdmin dibuat oleh sysAdmin dari menu **Akun admin**.
 
@@ -117,7 +119,7 @@ Menu **Pengaturan** menyediakan unduhan data dalam bentuk JSON. Untuk cadangan y
 | --- | --- |
 | `index.php` | Halaman aplikasi |
 | `api.php` | Titik masuk API (JSON) |
-| `sysadmin.php`, `infraadmin.php` | Link masuk khusus tiap peran admin |
+| `sysadmin.php`, `infraadmin.php` | Halaman masuk tiap peran admin, dibuka lewat alamat pendek `/sysAdmin` dan `/infraAdmin` |
 | `admin.php` | Halaman admin, dipakai oleh kedua link di atas |
 | `install.php` | Halaman pemasangan, hapus setelah selesai |
 | `config.php` | Data koneksi database, dibuat otomatis |

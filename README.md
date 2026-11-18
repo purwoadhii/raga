@@ -42,8 +42,8 @@ Setelah `npm start`, ada tiga alamat:
 | Alamat | Untuk |
 | --- | --- |
 | `http://localhost:8000` | Aplikasi KPI, untuk CEO, Division Head, Unit Head, dan Staff |
-| `http://localhost:8000/sysadmin.php` | sysAdmin: anggota, pengaturan aplikasi, akun admin |
-| `http://localhost:8000/infraadmin.php` | infraAdmin: status server, cadangan database, mode pemeliharaan |
+| `http://localhost:8000/sysAdmin` | sysAdmin: anggota, pengaturan aplikasi, akun admin |
+| `http://localhost:8000/infraAdmin` | infraAdmin: status server, cadangan database, mode pemeliharaan |
 
 Akun admin bawaan: username `admin`, password `123456`, masuk lewat link sysAdmin. Segera ganti passwordnya di menu **Akun saya**. Penjelasan halaman admin ada di [kpi/README.md](kpi/README.md#halaman-admin).
 
