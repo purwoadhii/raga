@@ -112,8 +112,9 @@ function adm_page(array $admin, array $pages, string $page, string $body, ?array
     $maint = kpi_setting('maintenance', '0') === '1'
         ? '<div class="flash warn">Mode pemeliharaan sedang aktif. Aplikasi KPI ditutup sementara untuk semua anggota.</div>'
         : '';
-    if (kpi_admin_uses_default_password($admin)) {
-        $maint .= '<div class="flash warn">Anda masih memakai password bawaan <b>123456</b>. Siapa pun yang tahu password ini bisa masuk. '
+    $defaultPass = kpi_admin_default_password($admin);
+    if ($defaultPass !== null) {
+        $maint .= '<div class="flash warn">Anda masih memakai password bawaan <b>' . h($defaultPass) . '</b>. Siapa pun yang tahu password ini bisa masuk. '
             . '<a href="' . ADM_SELF . '?p=akun">Ganti password sekarang</a>.</div>';
     }
 

@@ -124,7 +124,7 @@ a{color:var(--accent)}
     <ol class="steps">
       <li>Hapus file <code>install.php</code> dari server, supaya tidak bisa dipakai orang lain.</li>
       <li>Masuk ke aplikasi, lalu ganti password lewat menu <b>Pengaturan</b>.</li>
-      <li>Masuk ke <a href="sysAdmin">halaman sysAdmin</a> dengan username <code>admin</code> dan password <code>123456</code>, lalu segera ganti password itu di menu <b>Akun saya</b>.</li>
+      <li>Masuk ke <a href="sysAdmin">halaman sysAdmin</a> dengan username <code>admin</code> dan password <code>123456</code>, dan ke <a href="infraAdmin">halaman infraAdmin</a> dengan username <code>infraadmin</code> dan password <code>12345678</code>. Segera ganti kedua password itu di menu <b>Akun saya</b>.</li>
     </ol>
     <p><a href="index.php">Buka aplikasi sekarang</a></p>
   </div>

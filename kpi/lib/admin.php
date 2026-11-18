@@ -55,16 +55,16 @@ const KPI_ADMIN_PAGES = [
 /** Membuat tabel admins bila belum ada (pemasangan sebelum fitur ini). */
 function kpi_admin_ensure_schema(): void
 {
+    // Pengaturan dibaca ulang bila ada akun bawaan yang baru dibuat (penanda tersimpan di settings).
     if (kpi_admin_seed_default(db())) {
         kpi_settings(true);
     }
 }
 
-/** Akun ini masih memakai password bawaan akun admin. */
+/** Akun ini masih memakai password bawaan. */
 function kpi_admin_uses_default_password(array $admin): bool
 {
-    return $admin['username'] === KPI_DEFAULT_ADMIN['username']
-        && password_verify(KPI_DEFAULT_ADMIN['password'], (string)$admin['password_hash']);
+    return kpi_admin_default_password($admin) !== null;
 }
 
 /* ---------- Sesi admin (terpisah dari sesi aplikasi) ---------- */
@@ -495,14 +495,12 @@ function kpi_infra_checks(): array
     $c[] = ['Password contoh bawaan', $weak ? $weak . ' akun masih memakainya' : 'Tidak ada', $weak ? ($local ? 'info' : 'bad') : 'ok',
         $weak ? 'Ganti password akun contoh sebelum aplikasi dipakai sungguhan.' : ''];
 
-    $defaultAdmin = false;
-    $st = $db->prepare('SELECT * FROM admins WHERE username = ? AND is_active = 1');
-    $st->execute([KPI_DEFAULT_ADMIN['username']]);
-    if ($row = $st->fetch()) {
-        $defaultAdmin = kpi_admin_uses_default_password($row);
+    $inUse = [];
+    foreach (kpi_admin_defaults_in_use($db) as $user => $pass) {
+        $inUse[] = '"' . $user . '" (' . $pass . ')';
     }
-    $c[] = ['Password admin bawaan', $defaultAdmin ? 'Akun "admin" masih memakai 123456' : 'Sudah diganti', $defaultAdmin ? ($local ? 'warn' : 'bad') : 'ok',
-        $defaultAdmin ? 'Masuk sebagai admin lalu ganti password di menu Akun saya.' : ''];
+    $c[] = ['Password admin bawaan', $inUse ? 'Masih dipakai: ' . implode(', ', $inUse) : 'Sudah diganti', $inUse ? ($local ? 'warn' : 'bad') : 'ok',
+        $inUse ? 'Masuk dengan akun tersebut lalu ganti password di menu Akun saya.' : ''];
 
     $maint = kpi_setting('maintenance', '0') === '1';
     $c[] = ['Mode pemeliharaan', $maint ? 'Aktif, aplikasi ditutup sementara' : 'Mati', $maint ? 'warn' : 'ok', ''];

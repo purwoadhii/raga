@@ -86,7 +86,7 @@ try {
         'users'  => (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn(),
         'kpis'   => (int)$pdo->query('SELECT COUNT(*) FROM kpis')->fetchColumn(),
         'demo'   => kpi_setting_raw($pdo, 'demo_mode') === '1',
-        'admin'  => kpi_default_admin_active($pdo),
+        'admins' => kpi_admin_defaults_in_use($pdo),
     ]) . "\n";
 } catch (PDOException $e) {
     $code = (int)($e->errorInfo[1] ?? 0);
@@ -104,15 +104,6 @@ try {
     cli_fail('Galat database: ' . $e->getMessage(), 5);
 } catch (Throwable $e) {
     cli_fail($e->getMessage(), 6);
-}
-
-/** Akun admin bawaan masih ada dan masih memakai password bawaan. */
-function kpi_default_admin_active(PDO $pdo): bool
-{
-    $st = $pdo->prepare('SELECT password_hash FROM admins WHERE username = ? AND is_active = 1');
-    $st->execute([KPI_DEFAULT_ADMIN['username']]);
-    $hash = $st->fetchColumn();
-    return $hash !== false && password_verify(KPI_DEFAULT_ADMIN['password'], (string)$hash);
 }
 
 function kpi_setting_raw(PDO $pdo, string $key): ?string

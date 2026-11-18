@@ -104,41 +104,80 @@ function kpi_admin_table_sql(): string
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 }
 
-/** Akun admin bawaan, dibuat sekali saat pemasangan. Password wajib diganti sebelum dipakai sungguhan. */
-const KPI_DEFAULT_ADMIN = [
-    'name'     => 'Administrator',
-    'username' => 'admin',
-    'password' => '123456',
-    'role'     => 'sysadmin',
+/**
+ * Akun admin bawaan, masing-masing dibuat sekali saat pemasangan.
+ * Password wajib diganti sebelum aplikasi dipakai sungguhan.
+ * `flag` mencatat di tabel settings bahwa akun itu sudah pernah dibuat.
+ */
+const KPI_DEFAULT_ADMINS = [
+    [
+        'name'     => 'Administrator',
+        'username' => 'admin',
+        'password' => '123456',
+        'role'     => 'sysadmin',
+        'flag'     => 'default_admin_created',
+    ],
+    [
+        'name'     => 'Infrastructure Administrator',
+        'username' => 'infraadmin',
+        'password' => '12345678',
+        'role'     => 'infraadmin',
+        'flag'     => 'default_infraadmin_created',
+    ],
 ];
 
 /**
- * Membuat akun admin bawaan satu kali saja. Bila nanti dihapus, akun ini tidak dibuat ulang.
- * Mengembalikan true bila akun baru saja dibuat.
+ * Membuat akun admin bawaan yang belum pernah dibuat. Akun yang sudah pernah dibuat
+ * lalu dihapus tidak dibuat ulang, dan username yang sudah dipakai tidak ditimpa.
+ * Mengembalikan username akun yang baru saja dibuat.
  */
-function kpi_admin_seed_default(PDO $pdo): bool
+function kpi_admin_seed_default(PDO $pdo): array
 {
     $pdo->exec(kpi_admin_table_sql());
-    $st = $pdo->prepare('SELECT svalue FROM settings WHERE skey = ?');
-    $st->execute(['default_admin_created']);
-    if ($st->fetchColumn() !== false) {
-        return false;
+    $flag    = $pdo->prepare('SELECT svalue FROM settings WHERE skey = ?');
+    $exists  = $pdo->prepare('SELECT COUNT(*) FROM admins WHERE username = ?');
+    $insert  = $pdo->prepare('INSERT INTO admins (name, username, password_hash, role) VALUES (?,?,?,?)');
+    $mark    = $pdo->prepare('INSERT INTO settings (skey, svalue) VALUES (?, ?) ON DUPLICATE KEY UPDATE svalue = VALUES(svalue)');
+    $created = [];
+    foreach (KPI_DEFAULT_ADMINS as $d) {
+        $flag->execute([$d['flag']]);
+        if ($flag->fetchColumn() !== false) {
+            continue;
+        }
+        $exists->execute([$d['username']]);
+        if ((int)$exists->fetchColumn() === 0) {
+            $insert->execute([$d['name'], $d['username'], password_hash($d['password'], PASSWORD_DEFAULT), $d['role']]);
+            $created[] = $d['username'];
+        }
+        $mark->execute([$d['flag'], date('Y-m-d H:i')]);
     }
-    $chk = $pdo->prepare('SELECT COUNT(*) FROM admins WHERE username = ?');
-    $chk->execute([KPI_DEFAULT_ADMIN['username']]);
-    $created = false;
-    if ((int)$chk->fetchColumn() === 0) {
-        $pdo->prepare('INSERT INTO admins (name, username, password_hash, role) VALUES (?,?,?,?)')->execute([
-            KPI_DEFAULT_ADMIN['name'],
-            KPI_DEFAULT_ADMIN['username'],
-            password_hash(KPI_DEFAULT_ADMIN['password'], PASSWORD_DEFAULT),
-            KPI_DEFAULT_ADMIN['role'],
-        ]);
-        $created = true;
-    }
-    $pdo->prepare('INSERT INTO settings (skey, svalue) VALUES (?, ?) ON DUPLICATE KEY UPDATE svalue = VALUES(svalue)')
-        ->execute(['default_admin_created', date('Y-m-d H:i')]);
     return $created;
+}
+
+/** Password bawaan yang masih dipakai akun ini, atau null bila sudah diganti. */
+function kpi_admin_default_password(array $admin): ?string
+{
+    foreach (KPI_DEFAULT_ADMINS as $d) {
+        if ($admin['username'] === $d['username'] && password_verify($d['password'], (string)$admin['password_hash'])) {
+            return $d['password'];
+        }
+    }
+    return null;
+}
+
+/** Akun bawaan yang aktif dan masih memakai password bawaan: username => password. */
+function kpi_admin_defaults_in_use(PDO $pdo): array
+{
+    $out = [];
+    $st  = $pdo->prepare('SELECT * FROM admins WHERE username = ? AND is_active = 1');
+    foreach (KPI_DEFAULT_ADMINS as $d) {
+        $st->execute([$d['username']]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if ($row && kpi_admin_default_password($row) !== null) {
+            $out[$d['username']] = $d['password'];
+        }
+    }
+    return $out;
 }
 
 /** Urutan hapus tabel (anak lebih dulu). */
