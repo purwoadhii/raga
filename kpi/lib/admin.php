@@ -16,6 +16,17 @@ const KPI_ADMIN_ROLES = [
 ];
 const KPI_ADMIN_MIN_PASS = 8;
 
+/** Halaman masuk tiap peran. */
+const KPI_ADMIN_LINKS = [
+    'sysadmin'   => 'sysadmin.php',
+    'infraadmin' => 'infraadmin.php',
+];
+
+// sysadmin.php dan infraadmin.php menetapkan peran sebelum memuat admin.php.
+if (!defined('KPI_ADMIN_GATE')) {
+    define('KPI_ADMIN_GATE', null);
+}
+
 /** Halaman yang boleh dibuka tiap peran: kunci => judul menu. */
 const KPI_ADMIN_PAGES = [
     'sysadmin' => [
@@ -57,7 +68,8 @@ function kpi_admin_session_start(): void
         'secure'   => $https,
         'samesite' => 'Strict',
     ]);
-    session_name('KPIADMSESS');
+    // Tiap link punya sesi sendiri, jadi sysAdmin dan infraAdmin bisa masuk bersamaan di satu browser.
+    session_name(KPI_ADMIN_GATE !== null ? 'KPIADM_' . KPI_ADMIN_GATE : 'KPIADMSESS');
     session_start();
     if (empty($_SESSION['csrf'])) {
         $_SESSION['csrf'] = bin2hex(random_bytes(32));
@@ -90,7 +102,7 @@ function kpi_admin_current(): ?array
     $st = db()->prepare('SELECT * FROM admins WHERE id = ? AND is_active = 1');
     $st->execute([(int)$_SESSION['aid']]);
     $row = $st->fetch();
-    if (!$row || !isset(KPI_ADMIN_ROLES[$row['role']])) {
+    if (!$row || !isset(KPI_ADMIN_ROLES[$row['role']]) || (KPI_ADMIN_GATE !== null && $row['role'] !== KPI_ADMIN_GATE)) {
         kpi_admin_logout();
         return null;
     }
@@ -131,6 +143,10 @@ function kpi_admin_login(string $username, string $password): array
         throw new KpiApiError($generic, 401);
     }
     kpi_clear_failures($key);
+    if (KPI_ADMIN_GATE !== null && $row['role'] !== KPI_ADMIN_GATE) {
+        throw new KpiApiError('Akun ini adalah ' . KPI_ADMIN_ROLES[$row['role']] . '. Silakan masuk lewat link '
+            . KPI_ADMIN_LINKS[$row['role']] . '.', 403);
+    }
     kpi_admin_session_start();
     session_regenerate_id(true);
     $_SESSION['aid']  = (int)$row['id'];

@@ -16,6 +16,9 @@ require __DIR__ . '/lib/auth.php';
 require __DIR__ . '/lib/admin.php';
 require __DIR__ . '/lib/admin_views.php';
 
+/** Halaman yang sedang dipakai: sysadmin.php, infraadmin.php, atau admin.php. */
+define('ADM_SELF', KPI_ADMIN_GATE !== null ? KPI_ADMIN_LINKS[KPI_ADMIN_GATE] : 'admin.php');
+
 if (!kpi_is_installed()) {
     header('Location: install.php');
     exit;
@@ -30,7 +33,7 @@ header("Content-Security-Policy: default-src 'self'; script-src 'none'; style-sr
 
 function adm_go(string $query = ''): void
 {
-    header('Location: admin.php' . ($query !== '' ? '?' . $query : ''), true, 303);
+    header('Location: ' . ADM_SELF . ($query !== '' ? '?' . $query : ''), true, 303);
     exit;
 }
 
