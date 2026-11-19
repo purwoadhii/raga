@@ -22,15 +22,16 @@ try {
         header('Content-Type: text/html; charset=utf-8');
         header('Retry-After: 600');
         header('Cache-Control: no-store');
-        echo '<!doctype html><html lang="id"><meta charset="utf-8">'
+        $title = htmlspecialchars(kpi_t('Sedang dalam pemeliharaan'), ENT_QUOTES);
+        echo '<!doctype html><html lang="' . kpi_lang_html() . '" dir="' . kpi_lang_dir() . '"><meta charset="utf-8">'
            . '<meta name="viewport" content="width=device-width, initial-scale=1">'
-           . '<meta name="robots" content="noindex, nofollow"><title>Sedang dalam pemeliharaan</title>'
+           . '<meta name="robots" content="noindex, nofollow"><title>' . $title . '</title>'
            . '<style>:root{color-scheme:light dark}body{margin:0;min-height:100vh;display:grid;place-items:center;'
            . 'font:16px/1.6 system-ui,sans-serif;background:#F3F4F8;color:#151A2E;padding:24px;box-sizing:border-box}'
            . '@media (prefers-color-scheme:dark){body{background:#0E1120;color:#E7E9F3}div{background:#161A2C!important;border-color:#2B3150!important}}'
            . 'div{max-width:480px;background:#fff;border:1px solid #DCE0EB;border-radius:14px;padding:28px;text-align:center}'
            . 'img{width:56px;height:56px}h1{font-size:21px;margin:12px 0 8px}p{margin:0;opacity:.8}</style>'
-           . '<div><img src="assets/logo.png" alt=""><h1>Sedang dalam pemeliharaan</h1><p>'
+           . '<div><img src="assets/logo.png" alt=""><h1>' . $title . '</h1><p>'
            . htmlspecialchars($maintenance, ENT_QUOTES) . '</p></div></html>';
         exit;
     }
@@ -44,24 +45,26 @@ try {
 } catch (Throwable $e) {
     http_response_code(500);
     header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><meta charset="utf-8"><title>Gagal terhubung</title>'
+    echo '<!doctype html><html lang="' . kpi_lang_html() . '" dir="' . kpi_lang_dir() . '"><meta charset="utf-8"><title>'
+       . htmlspecialchars(kpi_t('Gagal terhubung'), ENT_QUOTES) . '</title>'
        . '<div style="font:16px/1.6 system-ui;max-width:640px;margin:60px auto;padding:0 20px">'
-       . '<h1 style="font-size:22px">Aplikasi tidak dapat terhubung ke database</h1>'
-       . '<p>Periksa kembali data koneksi di file <code>config.php</code>, lalu muat ulang halaman ini.</p>'
-       . '<p style="color:#666;font-size:14px">Detail teknis dicatat di log error server.</p></div>';
+       . '<h1 style="font-size:22px">' . htmlspecialchars(kpi_t('Aplikasi tidak dapat terhubung ke database'), ENT_QUOTES) . '</h1>'
+       . '<p>' . str_replace('{0}', '<code>config.php</code>', htmlspecialchars(kpi_t('Periksa kembali data koneksi di file {0}, lalu muat ulang halaman ini.'), ENT_QUOTES)) . '</p>'
+       . '<p style="color:#666;font-size:14px">' . htmlspecialchars(kpi_t('Detail teknis dicatat di log error server.'), ENT_QUOTES) . '</p></div></html>';
     error_log('[KPI] ' . $e->getMessage());
     exit;
 }
 
 $csrf = kpi_csrf_token();
 $ver  = (string)@filemtime(__DIR__ . '/assets/app.js');
+$ver18n = (string)@filemtime(__DIR__ . '/assets/i18n.js');
 header('Content-Type: text/html; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('Referrer-Policy: same-origin');
 ?>
 <!doctype html>
-<html lang="id">
+<html lang="<?= kpi_lang_html() ?>" dir="<?= kpi_lang_dir() ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -82,9 +85,12 @@ window.__BOOT__ = {
   company: <?= json_encode($company, JSON_UNESCAPED_UNICODE) ?>,
   demoMode: <?= $demo ? 'true' : 'false' ?>,
   demoAccounts: <?= json_encode(is_array($demoList) ? $demoList : [], JSON_UNESCAPED_UNICODE) ?>,
+  lang: <?= json_encode(kpi_lang()) ?>,
+  langSet: <?= kpi_lang_cookie() !== null ? 'true' : 'false' ?>,
   data: <?= $boot ? json_encode($boot, JSON_UNESCAPED_UNICODE) : 'null' ?>
 };
 </script>
+<script src="assets/i18n.js?v=<?= htmlspecialchars($ver18n, ENT_QUOTES) ?>"></script>
 <script src="assets/app.js?v=<?= htmlspecialchars($ver, ENT_QUOTES) ?>"></script>
 </body>
 </html>

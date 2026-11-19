@@ -123,14 +123,14 @@ function kpi_clear_failures(string $username): void
 function kpi_login(string $username, string $password): array
 {
     $username = mb_strtolower(trim($username));
-    $generic  = 'Username atau password salah. Silakan coba lagi.';
+    $generic  = 'Username atau password salah. Silakan coba lagi.'; // diterjemahkan oleh KpiApiError
 
     if ($username === '' || $password === '') {
         throw new KpiApiError($generic, 401);
     }
     $wait = kpi_locked_seconds($username);
     if ($wait > 0) {
-        throw new KpiApiError('Terlalu banyak percobaan gagal. Coba lagi dalam ' . ceil($wait / 60) . ' menit.', 429);
+        throw new KpiApiError('Terlalu banyak percobaan gagal. Coba lagi dalam {0} menit.', 429, [(int)ceil($wait / 60)]);
     }
 
     $st = db()->prepare('SELECT * FROM users WHERE username = ?');
@@ -140,8 +140,8 @@ function kpi_login(string $username, string $password): array
     if (!$user || !$user['is_active'] || !password_verify($password, $user['password_hash'])) {
         $adminPage = kpi_admin_page_for($username, $password);
         if ($adminPage !== null) {
-            throw new KpiApiError('Ini akun admin, bukan akun anggota. Masuk lewat halaman admin: '
-                . kpi_app_url($adminPage), 401);
+            throw new KpiApiError('Ini akun admin, bukan akun anggota. Masuk lewat halaman admin: {0}',
+                401, [kpi_app_url($adminPage)]);
         }
         kpi_note_failure($username);
         usleep(300000);

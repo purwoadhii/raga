@@ -3,6 +3,8 @@
  * Koneksi database dan pengaturan aplikasi.
  */
 
+require_once __DIR__ . '/i18n.php';
+
 define('KPI_ROOT', dirname(__DIR__));
 define('KPI_CONFIG_FILE', KPI_ROOT . '/config.php');
 
@@ -88,7 +90,7 @@ function kpi_maintenance_message(): ?string
         return null;
     }
     $msg = trim((string)kpi_setting('maintenance_msg', ''));
-    return $msg !== '' ? $msg : 'Aplikasi sedang dalam pemeliharaan. Silakan coba lagi beberapa saat lagi.';
+    return $msg !== '' ? $msg : kpi_t('Aplikasi sedang dalam pemeliharaan. Silakan coba lagi beberapa saat lagi.');
 }
 
 function kpi_log(?string $userId, string $action, string $detail = ''): void
