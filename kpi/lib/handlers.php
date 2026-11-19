@@ -3,13 +3,17 @@
  * Seluruh aksi API aplikasi KPI.
  */
 
+/**
+ * Galat yang ditampilkan ke pengguna. Pesan ditulis dalam bahasa Indonesia dan diterjemahkan
+ * ke bahasa pilihan pengguna (lib/i18n.php); {0}, {1}, ... diisi dari $args.
+ */
 class KpiApiError extends RuntimeException
 {
     public int $status;
 
-    public function __construct(string $message, int $status = 400)
+    public function __construct(string $message, int $status = 400, array $args = [])
     {
-        parent::__construct($message);
+        parent::__construct(function_exists('kpi_t') ? kpi_t($message, ...$args) : $message);
         $this->status = $status;
     }
 }
@@ -23,7 +27,7 @@ function in_str(array $in, string $key, int $max = 255, string $default = ''): s
         $v = (string)$v;
     }
     if (!is_string($v)) {
-        throw new KpiApiError('Isian "' . $key . '" tidak valid.');
+        throw new KpiApiError('Isian "{0}" tidak valid.', 400, [$key]);
     }
     $v = trim(preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $v));
     return mb_substr($v, 0, $max);
@@ -39,7 +43,7 @@ function in_num(array $in, string $key, ?float $default = null): ?float
         $v = str_replace(',', '.', trim($v));
     }
     if (!is_numeric($v)) {
-        throw new KpiApiError('Isian "' . $key . '" harus berupa angka.');
+        throw new KpiApiError('Isian "{0}" harus berupa angka.', 400, [$key]);
     }
     return (float)$v;
 }
@@ -49,12 +53,12 @@ function in_id(array $in, string $key, bool $required = true): ?int
     $v = $in[$key] ?? null;
     if ($v === null || $v === '' || $v === '0') {
         if ($required) {
-            throw new KpiApiError('Isian "' . $key . '" wajib diisi.');
+            throw new KpiApiError('Isian "{0}" wajib diisi.', 400, [$key]);
         }
         return null;
     }
     if (!is_numeric($v)) {
-        throw new KpiApiError('Isian "' . $key . '" tidak valid.');
+        throw new KpiApiError('Isian "{0}" tidak valid.', 400, [$key]);
     }
     return (int)$v;
 }
@@ -214,7 +218,7 @@ function kpi_user_save(array $in): array
     $chk = $db->prepare('SELECT id FROM users WHERE username = ? AND id <> ?');
     $chk->execute([$username, $id ?: 0]);
     if ($chk->fetchColumn()) {
-        throw new KpiApiError('Username "' . $username . '" sudah dipakai. Gunakan username lain.');
+        throw new KpiApiError('Username "{0}" sudah dipakai. Gunakan username lain.', 400, [$username]);
     }
     $users = kpi_all_users();
 
@@ -410,7 +414,7 @@ function kpi_handle(string $action, array $in): array
                 $up = db()->prepare('UPDATE actuals SET status = "approved", note = "", approved_by = ? WHERE id = ?');
                 $up->execute([(int)$me['id'], $row['id']]);
             } else {
-                $note = in_str($in, 'note', 500) ?: 'Mohon diperiksa kembali.';
+                $note = in_str($in, 'note', 500) ?: kpi_t('Mohon diperiksa kembali.');
                 $up = db()->prepare('UPDATE actuals SET status = "rejected", note = ?, approved_by = ? WHERE id = ?');
                 $up->execute([$note, (int)$me['id'], $row['id']]);
             }

@@ -52,6 +52,23 @@ Aturan pengaman:
 - Saat mode pemeliharaan aktif, aplikasi menampilkan halaman pemberitahuan dan tidak ada yang bisa masuk, tetapi halaman admin tetap bisa dibuka.
 - Semua tindakan admin tercatat di Catatan aktivitas.
 
+## Bahasa
+
+Pilihan bahasa ada di halaman masuk (kanan atas) dan di bagian atas setiap halaman aplikasi, dengan ikon bola dunia.
+
+| Wilayah | Bahasa |
+| --- | --- |
+| Asia | Bahasa Indonesia (bawaan), 简体中文 (Mandarin), 日本語 (Jepang), العربية (Arab) |
+| Eropa | English (Inggris), Français (Prancis), Deutsch (Jerman), Español (Spanyol) |
+
+- Pilihan disimpan di browser masing-masing, jadi setiap orang bisa memakai bahasanya sendiri. Bila belum memilih, aplikasi tampil dalam Bahasa Indonesia.
+- Bahasa Arab ditampilkan dari kanan ke kiri.
+- Nama bulan, tanda desimal, dan pesan dari server (misalnya "password salah") ikut bahasa yang dipilih.
+- Data yang diisi sendiri, seperti nama orang, jabatan, unit, dan nama KPI, tidak diterjemahkan.
+- Halaman admin (`/sysAdmin`, `/infraAdmin`) dan halaman pemasangan masih berbahasa Indonesia.
+
+Terjemahan tampilan ada di `assets/i18n.js`, dan terjemahan pesan server ada di `lib/i18n.php`. Setiap baris berisi teks Indonesia diikuti terjemahannya, jadi untuk memperbaiki sebuah terjemahan cukup ubah teks di baris itu.
+
 ## Kebutuhan hosting
 
 - PHP 8.0 atau lebih baru, dengan ekstensi **PDO MySQL** (hampir semua hosting sudah ada).
@@ -90,6 +107,7 @@ Sebelum dipakai sungguhan, ganti semua password dan matikan tampilan akun contoh
 - **Bobot dan skor.** Tiap KPI punya bobot, target bulanan, dan arah penilaian (makin tinggi atau makin rendah makin baik). Capaian per KPI dibatasi maksimal 120 persen, dan batas ini dapat diubah CEO.
 - **Alur persetujuan.** Staf mengisi lalu mengajukan realisasi. Atasan langsung menyetujui atau mengembalikan dengan catatan. Realisasi yang sudah disetujui tidak bisa diubah sendiri oleh staf.
 - **Dashboard per level**, **Pohon KPI**, **Struktur Organisasi**, dan **Laporan** skor bulanan yang bisa disalin ke Excel.
+- **8 bahasa tampilan**: Indonesia, Mandarin, Jepang, Arab, Inggris, Prancis, Jerman, dan Spanyol. Lihat [Bahasa](#bahasa).
 
 ## Hak akses
 
@@ -124,5 +142,5 @@ Menu **Pengaturan** menyediakan unduhan data dalam bentuk JSON. Untuk cadangan y
 | `admin.php` | Halaman admin, dipakai oleh kedua link di atas |
 | `install.php` | Halaman pemasangan, hapus setelah selesai |
 | `config.php` | Data koneksi database, dibuat otomatis |
-| `lib/` | Program inti: database, login, hak akses, pemasangan, data contoh |
-| `assets/` | Tampilan: `app.css`, `app.js`, `admin.css`, `logo.png` |
+| `lib/` | Program inti: database, login, hak akses, pemasangan, data contoh, terjemahan pesan server (`i18n.php`) |
+| `assets/` | Tampilan: `app.css`, `app.js`, terjemahan tampilan (`i18n.js`), `admin.css`, `logo.png` |
