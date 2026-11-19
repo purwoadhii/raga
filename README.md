@@ -6,7 +6,7 @@ Kumpulan aplikasi web internal. Setiap aplikasi berada di foldernya sendiri.
 
 | Folder | Aplikasi | Keterangan |
 | --- | --- | --- |
-| [`kpi/`](kpi/) | Key Performance Indicator | KPI berjenjang dari CEO hingga Staff, tersedia dalam 8 bahasa. Versi PHP + MySQL |
+| [`kpi/`](kpi/) | Key Performance Indicator | KPI berjenjang dari CEO hingga Staff, tersedia dalam 8 bahasa (termasuk halaman sysAdmin dan infraAdmin). Versi PHP + MySQL |
 | [`kpi-demo/`](kpi-demo/) | KPI (versi coba) | Aplikasi KPI dalam satu file HTML, tanpa database. Untuk mencoba tampilannya |
 
 ## Menjalankan aplikasi KPI di komputer sendiri

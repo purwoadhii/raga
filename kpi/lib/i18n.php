@@ -23,6 +23,30 @@ const KPI_LANG_COOKIE  = 'kpi_lang';
 /** Urutan kolom terjemahan di kpi_messages(). */
 const KPI_LANG_ORDER = ['en', 'zh', 'ja', 'ar', 'fr', 'de', 'es'];
 
+/** Nama asli tiap bahasa, untuk pilihan bahasa di halaman admin. */
+const KPI_LANG_ENDONYMS = [
+    'id' => 'Bahasa Indonesia', 'zh' => '简体中文', 'ja' => '日本語', 'ar' => 'العربية',
+    'en' => 'English', 'fr' => 'Français', 'de' => 'Deutsch', 'es' => 'Español',
+];
+
+/** Nama tiap bahasa, ditulis dalam bahasa yang sedang dipakai (sama dengan "names" di assets/i18n.js). */
+const KPI_LANG_NAMES = [
+    'id' => ['id' => 'Indonesia', 'zh' => 'Mandarin', 'ja' => 'Jepang', 'ar' => 'Arab', 'en' => 'Inggris', 'fr' => 'Prancis', 'de' => 'Jerman', 'es' => 'Spanyol'],
+    'zh' => ['id' => '印尼语', 'zh' => '中文', 'ja' => '日语', 'ar' => '阿拉伯语', 'en' => '英语', 'fr' => '法语', 'de' => '德语', 'es' => '西班牙语'],
+    'ja' => ['id' => 'インドネシア語', 'zh' => '中国語', 'ja' => '日本語', 'ar' => 'アラビア語', 'en' => '英語', 'fr' => 'フランス語', 'de' => 'ドイツ語', 'es' => 'スペイン語'],
+    'ar' => ['id' => 'الإندونيسية', 'zh' => 'الصينية', 'ja' => 'اليابانية', 'ar' => 'العربية', 'en' => 'الإنجليزية', 'fr' => 'الفرنسية', 'de' => 'الألمانية', 'es' => 'الإسبانية'],
+    'en' => ['id' => 'Indonesian', 'zh' => 'Chinese', 'ja' => 'Japanese', 'ar' => 'Arabic', 'en' => 'English', 'fr' => 'French', 'de' => 'German', 'es' => 'Spanish'],
+    'fr' => ['id' => 'Indonésien', 'zh' => 'Chinois', 'ja' => 'Japonais', 'ar' => 'Arabe', 'en' => 'Anglais', 'fr' => 'Français', 'de' => 'Allemand', 'es' => 'Espagnol'],
+    'de' => ['id' => 'Indonesisch', 'zh' => 'Chinesisch', 'ja' => 'Japanisch', 'ar' => 'Arabisch', 'en' => 'Englisch', 'fr' => 'Französisch', 'de' => 'Deutsch', 'es' => 'Spanisch'],
+    'es' => ['id' => 'Indonesio', 'zh' => 'Chino', 'ja' => 'Japonés', 'ar' => 'Árabe', 'en' => 'Inglés', 'fr' => 'Francés', 'de' => 'Alemán', 'es' => 'Español'],
+];
+
+/** Pengelompokan di pilihan bahasa: judul kelompok => kode bahasa. */
+const KPI_LANG_REGIONS = [
+    'Asia'  => ['id', 'zh', 'ja', 'ar'],
+    'Eropa' => ['en', 'fr', 'de', 'es'],
+];
+
 /** Bahasa pilihan pengguna yang tersimpan di cookie, atau null bila belum memilih. */
 function kpi_lang_cookie(): ?string
 {
@@ -67,14 +91,43 @@ function kpi_t(string $text, ...$args): string
     return $text;
 }
 
-/** Terjemahan pesan server. Urutan kolom mengikuti KPI_LANG_ORDER. */
+/** Angka dengan pemisah ribuan dan desimal yang lazim di bahasa yang sedang dipakai. */
+function kpi_num(float $n, int $dec = 0): string
+{
+    switch (kpi_lang()) {
+        case 'en': case 'zh': case 'ja': case 'ar':
+            return number_format($n, $dec, '.', ',');
+        case 'fr':
+            return number_format($n, $dec, ',', "\u{202F}");
+        default:
+            return number_format($n, $dec, ',', '.');
+    }
+}
+
+/** Format tanggal dan jam untuk tabel, mengikuti kebiasaan tiap bahasa. */
+function kpi_date_format(): string
+{
+    switch (kpi_lang()) {
+        case 'zh': case 'ja':
+            return 'Y/m/d H:i';
+        case 'de':
+            return 'd.m.Y H:i';
+        default:
+            return 'd/m/Y H:i';
+    }
+}
+
+/**
+ * Terjemahan pesan server. Urutan kolom mengikuti KPI_LANG_ORDER.
+ * Halaman admin (admin.php) menetapkan KPI_I18N_ADMIN supaya terjemahannya ikut dimuat.
+ */
 function kpi_messages(): array
 {
     static $m = null;
     if ($m !== null) {
         return $m;
     }
-    return $m = [
+    $m = [
         // Isian formulir
         'Isian "{0}" tidak valid.' => ["The field “{0}” is invalid.", "字段“{0}”无效。", "項目「{0}」が無効です。", "الحقل «{0}» غير صالح.", "Le champ « {0} » n'est pas valide.", "Das Feld „{0}“ ist ungültig.", "El campo «{0}» no es válido."],
         'Isian "{0}" harus berupa angka.' => ["The field “{0}” must be a number.", "字段“{0}”必须是数字。", "項目「{0}」は数値で入力してください。", "يجب أن يكون الحقل «{0}» رقمًا.", "Le champ « {0} » doit être un nombre.", "Das Feld „{0}“ muss eine Zahl sein.", "El campo «{0}» debe ser un número."],
@@ -144,4 +197,8 @@ function kpi_messages(): array
         'Periksa kembali data koneksi di file {0}, lalu muat ulang halaman ini.' => ["Check the connection details in the {0} file, then reload this page.", "请检查 {0} 文件中的连接信息，然后刷新此页面。", "{0} ファイルの接続情報を確認してから、このページを再読み込みしてください。", "تحقّق من بيانات الاتصال في الملف {0}، ثم أعد تحميل هذه الصفحة.", "Vérifiez les informations de connexion dans le fichier {0}, puis rechargez cette page.", "Prüfen Sie die Verbindungsdaten in der Datei {0} und laden Sie diese Seite neu.", "Revise los datos de conexión en el archivo {0} y vuelva a cargar esta página."],
         'Detail teknis dicatat di log error server.' => ["Technical details are written to the server error log.", "技术细节已记录在服务器错误日志中。", "技術的な詳細はサーバーのエラーログに記録されています。", "سُجّلت التفاصيل الفنية في سجل أخطاء الخادم.", "Les détails techniques sont consignés dans le journal d'erreurs du serveur.", "Technische Details stehen im Fehlerprotokoll des Servers.", "Los detalles técnicos se registran en el registro de errores del servidor."],
     ];
+    if (defined('KPI_I18N_ADMIN')) {
+        $m += require __DIR__ . '/i18n_admin.php';
+    }
+    return $m;
 }
