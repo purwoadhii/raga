@@ -54,7 +54,7 @@ Aturan pengaman:
 
 ## Bahasa
 
-Pilihan bahasa ada di halaman masuk (kanan atas) dan di bagian atas setiap halaman aplikasi, dengan ikon bola dunia.
+Pilihan bahasa ada di halaman masuk (kanan atas) dan di bagian atas setiap halaman, dengan ikon bola dunia. Pilihan ini juga ada di halaman admin `/sysAdmin` dan `/infraAdmin`.
 
 | Wilayah | Bahasa |
 | --- | --- |
@@ -62,12 +62,13 @@ Pilihan bahasa ada di halaman masuk (kanan atas) dan di bagian atas setiap halam
 | Eropa | English (Inggris), Français (Prancis), Deutsch (Jerman), Español (Spanyol) |
 
 - Pilihan disimpan di browser masing-masing, jadi setiap orang bisa memakai bahasanya sendiri. Bila belum memilih, aplikasi tampil dalam Bahasa Indonesia.
+- Aplikasi dan halaman admin memakai pilihan yang sama: bahasa yang dipilih di salah satunya langsung berlaku di yang lain pada browser itu.
 - Bahasa Arab ditampilkan dari kanan ke kiri.
 - Nama bulan, tanda desimal, dan pesan dari server (misalnya "password salah") ikut bahasa yang dipilih.
-- Data yang diisi sendiri, seperti nama orang, jabatan, unit, dan nama KPI, tidak diterjemahkan.
-- Halaman admin (`/sysAdmin`, `/infraAdmin`) dan halaman pemasangan masih berbahasa Indonesia.
+- Data yang diisi sendiri tidak diterjemahkan: nama orang, jabatan, unit, nama KPI, pesan pemeliharaan yang ditulis infraAdmin, dan rincian di catatan aktivitas.
+- Halaman pemasangan (`install.php`) dan perintah `npm run setup` masih berbahasa Indonesia.
 
-Terjemahan tampilan ada di `assets/i18n.js`, dan terjemahan pesan server ada di `lib/i18n.php`. Setiap baris berisi teks Indonesia diikuti terjemahannya, jadi untuk memperbaiki sebuah terjemahan cukup ubah teks di baris itu.
+Terjemahan tampilan aplikasi ada di `assets/i18n.js`, pesan server di `lib/i18n.php`, dan halaman admin di `lib/i18n_admin.php`. Setiap baris berisi teks Indonesia diikuti terjemahannya, jadi untuk memperbaiki sebuah terjemahan cukup ubah teks di baris itu.
 
 ## Kebutuhan hosting
 

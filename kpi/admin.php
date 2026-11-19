@@ -9,6 +9,9 @@
 
 declare(strict_types=1);
 
+// Terjemahan halaman admin ikut dimuat oleh kpi_t() (lib/i18n.php).
+const KPI_I18N_ADMIN = true;
+
 require __DIR__ . '/lib/db.php';
 require __DIR__ . '/lib/schema.php';
 require __DIR__ . '/lib/handlers.php';
@@ -53,6 +56,35 @@ function adm_flash(string $type, string $msg): void
     $_SESSION['flash'] = ['type' => $type, 'msg' => $msg];
 }
 
+/**
+ * Ganti bahasa lewat tautan ?lang=xx dari menu bahasa. Pilihan disimpan di cookie kpi_lang
+ * dengan path folder aplikasi, sama seperti yang dibuat assets/app.js, jadi aplikasi KPI
+ * dan halaman admin selalu memakai bahasa yang sama.
+ */
+function adm_set_lang(string $code, string $path): void
+{
+    if (!isset(KPI_LANGS[$code])) {
+        return;
+    }
+    $dir = substr($path, 0, (int)strrpos($path, '/') + 1);
+    if (!preg_match('#^/[A-Za-z0-9._~/%-]*$#', $dir)) {
+        $dir = '/';
+    }
+    setcookie(KPI_LANG_COOKIE, $code, ['expires' => time() + 31536000, 'path' => $dir, 'samesite' => 'Lax']);
+    $_COOKIE[KPI_LANG_COOKIE] = $code;
+}
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && isset($_GET['lang']) && is_string($_GET['lang'])) {
+    adm_set_lang($_GET['lang'], $admPath);
+    $keep = [];
+    foreach (['p', 'edit', 'new', 'q'] as $k) {
+        if (isset($_GET[$k]) && is_string($_GET[$k]) && $_GET[$k] !== '') {
+            $keep[$k] = $_GET[$k];
+        }
+    }
+    adm_go(http_build_query($keep));
+}
+
 /** Alamat kembali dari formulir: hanya halaman milik peran ini, dengan id angka. */
 function adm_back(array $pages, string $fallback): string
 {
@@ -82,7 +114,7 @@ try {
     if ($method === 'POST') {
         $act = (string)($_POST['_act'] ?? '');
         if (!kpi_admin_check_csrf($_POST['_csrf'] ?? null)) {
-            adm_flash('err', 'Sesi sudah berakhir. Silakan ulangi.');
+            adm_flash('err', kpi_t('Sesi sudah berakhir. Silakan ulangi.'));
             adm_go();
         }
 
@@ -94,19 +126,19 @@ try {
             }
             if ($act === 'first_admin') {
                 kpi_admin_bootstrap($_POST);
-                adm_flash('ok', 'Akun admin sudah dibuat. Silakan masuk.');
+                adm_flash('ok', kpi_t('Akun admin sudah dibuat. Silakan masuk.'));
                 adm_go();
             }
 
             if (!$admin) {
-                adm_flash('err', 'Silakan masuk terlebih dahulu.');
+                adm_flash('err', kpi_t('Silakan masuk terlebih dahulu.'));
                 adm_go();
             }
             $aid  = (int)$admin['id'];
             $role = $admin['role'];
             $need = function (string $r) use ($role): void {
                 if ($role !== $r) {
-                    throw new KpiApiError('Tindakan ini hanya untuk ' . KPI_ADMIN_ROLES[$r] . '.', 403);
+                    throw new KpiApiError('Tindakan ini hanya untuk {0}.', 403, [KPI_ADMIN_ROLES[$r]]);
                 }
             };
 
@@ -132,7 +164,7 @@ try {
                         ->execute([password_hash($new, PASSWORD_DEFAULT), $aid]);
                     session_regenerate_id(true);
                     kpi_admin_log($admin, 'admin_ganti_password', '');
-                    adm_flash('ok', 'Password Anda sudah diganti.');
+                    adm_flash('ok', kpi_t('Password Anda sudah diganti.'));
                     adm_go('p=akun');
                     break;
                 }
@@ -150,7 +182,7 @@ try {
                         'parentId' => $_POST['parentId'] ?? '',
                     ]);
                     kpi_admin_log($admin, 'user_save', "user=$id username=$username");
-                    adm_flash('ok', 'Data anggota "' . $username . '" sudah disimpan.');
+                    adm_flash('ok', kpi_t('Data anggota "{0}" sudah disimpan.', $username));
                     adm_go('p=anggota');
                     break;
                 }
@@ -159,7 +191,8 @@ try {
                     $on = !empty($_POST['active']);
                     $u  = kpi_user_set_active((int)($_POST['id'] ?? 0), $on);
                     kpi_admin_log($admin, $on ? 'user_aktif' : 'user_nonaktif', 'username=' . $u['username']);
-                    adm_flash('ok', 'Akun "' . $u['username'] . '" ' . ($on ? 'diaktifkan kembali.' : 'dinonaktifkan dan tidak bisa masuk.'));
+                    adm_flash('ok', $on ? kpi_t('Akun "{0}" diaktifkan kembali.', $u['username'])
+                                        : kpi_t('Akun "{0}" dinonaktifkan dan tidak bisa masuk.', $u['username']));
                     adm_go('p=anggota');
                     break;
                 }
@@ -173,7 +206,7 @@ try {
                     $uname = $users[$id]['username'] ?? '';
                     kpi_user_delete($id);
                     kpi_admin_log($admin, 'user_delete', "user=$id username=$uname");
-                    adm_flash('ok', 'Anggota "' . $uname . '" beserta KPI miliknya sudah dihapus.');
+                    adm_flash('ok', kpi_t('Anggota "{0}" beserta KPI miliknya sudah dihapus.', $uname));
                     adm_go('p=anggota');
                     break;
                 }
@@ -182,7 +215,7 @@ try {
                     $ident = (string)($_POST['ident'] ?? '');
                     kpi_unlock($ident);
                     kpi_admin_log($admin, 'buka_kunci', strtok($ident, '|') ?: '');
-                    adm_flash('ok', 'Kunci login sudah dibuka.');
+                    adm_flash('ok', kpi_t('Kunci login sudah dibuka.'));
                     adm_go('p=anggota');
                     break;
                 }
@@ -205,7 +238,7 @@ try {
                     kpi_set_setting('year', $year);
                     kpi_set_setting('demo_mode', !empty($_POST['demo_mode']) ? '1' : '0');
                     kpi_admin_log($admin, 'settings_save', '');
-                    adm_flash('ok', 'Pengaturan aplikasi sudah disimpan.');
+                    adm_flash('ok', kpi_t('Pengaturan aplikasi sudah disimpan.'));
                     adm_go('p=pengaturan');
                     break;
                 }
@@ -220,7 +253,7 @@ try {
                     ]);
                     $row = kpi_admin_find($id);
                     kpi_admin_log($admin, 'admin_save', $row['username'] . ' sebagai ' . KPI_ADMIN_ROLES[$row['role']]);
-                    adm_flash('ok', 'Akun admin "' . $row['username'] . '" sudah disimpan.');
+                    adm_flash('ok', kpi_t('Akun admin "{0}" sudah disimpan.', $row['username']));
                     adm_go('p=admin');
                     break;
                 }
@@ -229,7 +262,8 @@ try {
                     $on  = !empty($_POST['active']);
                     $row = kpi_admin_set_active((int)($_POST['id'] ?? 0), $on, $aid);
                     kpi_admin_log($admin, $on ? 'admin_aktif' : 'admin_nonaktif', $row['username']);
-                    adm_flash('ok', 'Akun admin "' . $row['username'] . '" ' . ($on ? 'diaktifkan kembali.' : 'dinonaktifkan.'));
+                    adm_flash('ok', $on ? kpi_t('Akun admin "{0}" diaktifkan kembali.', $row['username'])
+                                        : kpi_t('Akun admin "{0}" dinonaktifkan.', $row['username']));
                     adm_go('p=admin');
                     break;
                 }
@@ -237,7 +271,7 @@ try {
                     $need('sysadmin');
                     $row = kpi_admin_delete((int)($_POST['id'] ?? 0), $aid);
                     kpi_admin_log($admin, 'admin_delete', $row['username']);
-                    adm_flash('ok', 'Akun admin "' . $row['username'] . '" sudah dihapus.');
+                    adm_flash('ok', kpi_t('Akun admin "{0}" sudah dihapus.', $row['username']));
                     adm_go('p=admin');
                     break;
                 }
@@ -249,8 +283,8 @@ try {
                     kpi_set_setting('maintenance', $on ? '1' : '0');
                     kpi_set_setting('maintenance_msg', in_str($_POST, 'message', 300));
                     kpi_admin_log($admin, $on ? 'pemeliharaan_aktif' : 'pemeliharaan_mati', '');
-                    adm_flash('ok', $on ? 'Mode pemeliharaan aktif. Aplikasi ditutup sementara untuk semua anggota.'
-                                        : 'Mode pemeliharaan dimatikan. Aplikasi bisa dipakai kembali.');
+                    adm_flash('ok', $on ? kpi_t('Mode pemeliharaan aktif. Aplikasi ditutup sementara untuk semua anggota.')
+                                        : kpi_t('Mode pemeliharaan dimatikan. Aplikasi bisa dipakai kembali.'));
                     adm_go('p=pemeliharaan');
                     break;
                 }
@@ -262,7 +296,7 @@ try {
                     }
                     $n = kpi_activity_purge($days);
                     kpi_admin_log($admin, 'catatan_dibersihkan', "$n baris, lebih lama dari $days hari");
-                    adm_flash('ok', $n . ' catatan yang lebih lama dari ' . $days . ' hari sudah dihapus.');
+                    adm_flash('ok', kpi_t('{0} catatan yang lebih lama dari {1} hari sudah dihapus.', kpi_num($n), $days));
                     adm_go('p=aktivitas');
                     break;
                 }
@@ -329,9 +363,10 @@ try {
     error_log('[KPI admin] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
     http_response_code(500);
     header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
-       . '<title>Halaman admin bermasalah</title><link rel="stylesheet" href="assets/admin.css">'
-       . '<main class="guest"><div class="card"><h1>Halaman admin tidak dapat dibuka</h1>'
-       . '<p class="muted">Aplikasi tidak dapat terhubung ke database, atau terjadi galat di server. '
-       . 'Pastikan MySQL menyala, lalu muat ulang halaman ini. Rincian teknis dicatat di log error server.</p></div></main>';
+    $tr = static fn(string $s): string => htmlspecialchars(kpi_t($s), ENT_QUOTES);
+    echo '<!doctype html><html lang="' . kpi_lang_html() . '" dir="' . kpi_lang_dir() . '"><meta charset="utf-8">'
+       . '<meta name="viewport" content="width=device-width, initial-scale=1">'
+       . '<title>' . $tr('Halaman admin bermasalah') . '</title><link rel="stylesheet" href="assets/admin.css">'
+       . '<main class="guest"><div class="card"><h1>' . $tr('Halaman admin tidak dapat dibuka') . '</h1>'
+       . '<p class="muted">' . $tr('Aplikasi tidak dapat terhubung ke database, atau terjadi galat di server. Pastikan MySQL menyala, lalu muat ulang halaman ini. Rincian teknis dicatat di log error server.') . '</p></div></main>';
 }

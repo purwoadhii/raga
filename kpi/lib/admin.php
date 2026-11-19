@@ -146,7 +146,7 @@ function kpi_admin_login(string $username, string $password): array
     $key  = 'admin:' . $username;
     $wait = kpi_locked_seconds($key);
     if ($wait > 0) {
-        throw new KpiApiError('Terlalu banyak percobaan gagal. Coba lagi dalam ' . ceil($wait / 60) . ' menit.', 429);
+        throw new KpiApiError('Terlalu banyak percobaan gagal. Coba lagi dalam {0} menit.', 429, [(int)ceil($wait / 60)]);
     }
     $st = db()->prepare('SELECT * FROM admins WHERE username = ?');
     $st->execute([$username]);
@@ -159,8 +159,8 @@ function kpi_admin_login(string $username, string $password): array
     }
     kpi_clear_failures($key);
     if (KPI_ADMIN_GATE !== null && $row['role'] !== KPI_ADMIN_GATE) {
-        throw new KpiApiError('Akun ini adalah ' . KPI_ADMIN_ROLES[$row['role']] . '. Silakan masuk lewat alamat '
-            . kpi_app_url(KPI_ADMIN_LINKS[$row['role']]), 403);
+        throw new KpiApiError('Akun ini adalah {0}. Silakan masuk lewat alamat {1}', 403,
+            [KPI_ADMIN_ROLES[$row['role']], kpi_app_url(KPI_ADMIN_LINKS[$row['role']])]);
     }
     kpi_admin_session_start();
     session_regenerate_id(true);
@@ -195,7 +195,7 @@ function kpi_admin_count_sys(?int $exceptId = null): int
 function kpi_admin_check_password(string $pass): void
 {
     if (mb_strlen($pass) < KPI_ADMIN_MIN_PASS) {
-        throw new KpiApiError('Password admin minimal ' . KPI_ADMIN_MIN_PASS . ' karakter.');
+        throw new KpiApiError('Password admin minimal {0} karakter.', 400, [KPI_ADMIN_MIN_PASS]);
     }
 }
 
@@ -220,7 +220,7 @@ function kpi_admin_save(array $in): int
     $chk = $db->prepare('SELECT id FROM admins WHERE username = ? AND id <> ?');
     $chk->execute([$username, $id ?: 0]);
     if ($chk->fetchColumn()) {
-        throw new KpiApiError('Username "' . $username . '" sudah dipakai admin lain.');
+        throw new KpiApiError('Username "{0}" sudah dipakai admin lain.', 400, [$username]);
     }
 
     if ($id) {
@@ -302,7 +302,7 @@ function kpi_admin_bootstrap(array $in): void
     $key     = 'admin-setup:' . $ceoUser;
     $wait    = kpi_locked_seconds($key);
     if ($wait > 0) {
-        throw new KpiApiError('Terlalu banyak percobaan gagal. Coba lagi dalam ' . ceil($wait / 60) . ' menit.', 429);
+        throw new KpiApiError('Terlalu banyak percobaan gagal. Coba lagi dalam {0} menit.', 429, [(int)ceil($wait / 60)]);
     }
     $st = db()->prepare("SELECT * FROM users WHERE username = ? AND level = 'ceo' AND is_active = 1");
     $st->execute([$ceoUser]);
@@ -437,10 +437,10 @@ function kpi_bytes(float $n): string
         $n /= 1024;
         $i++;
     }
-    return ($i === 0 ? (string)(int)$n : number_format($n, 1, ',', '.')) . ' ' . $units[$i];
+    return ($i === 0 ? (string)(int)$n : kpi_num($n, 1)) . ' ' . $units[$i];
 }
 
-/** Daftar pemeriksaan: [judul, nilai, keadaan (ok|warn|bad|info), saran]. */
+/** Daftar pemeriksaan: [judul, nilai, keadaan (ok|warn|bad|info), saran], sudah diterjemahkan. */
 function kpi_infra_checks(): array
 {
     $db    = db();
@@ -450,37 +450,37 @@ function kpi_infra_checks(): array
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
     $c = [];
 
-    $c[] = ['Versi PHP', PHP_VERSION, PHP_VERSION_ID >= 80000 ? 'ok' : 'bad', PHP_VERSION_ID >= 80000 ? '' : 'Perlu PHP 8.0 atau lebih baru.'];
-    $c[] = ['Server web', (string)($_SERVER['SERVER_SOFTWARE'] ?? PHP_SAPI), 'info', ''];
+    $c[] = [kpi_t('Versi PHP'), PHP_VERSION, PHP_VERSION_ID >= 80000 ? 'ok' : 'bad', PHP_VERSION_ID >= 80000 ? '' : kpi_t('Perlu PHP 8.0 atau lebih baru.')];
+    $c[] = [kpi_t('Server web'), (string)($_SERVER['SERVER_SOFTWARE'] ?? PHP_SAPI), 'info', ''];
     foreach (['pdo_mysql', 'mbstring', 'json'] as $ext) {
         $on  = extension_loaded($ext);
-        $c[] = ['Ekstensi ' . $ext, $on ? 'Aktif' : 'Tidak aktif', $on ? 'ok' : 'bad', $on ? '' : 'Aktifkan ekstensi ini di php.ini.'];
+        $c[] = [kpi_t('Ekstensi {0}', $ext), $on ? kpi_t('Aktif') : kpi_t('Tidak aktif'), $on ? 'ok' : 'bad', $on ? '' : kpi_t('Aktifkan ekstensi ini di php.ini.')];
     }
-    $c[] = ['Database', (string)$db->query('SELECT VERSION()')->fetchColumn(), 'ok', ''];
-    $c[] = ['Alamat database', ($cfg['db_host'] ?? '') . ':' . ($cfg['db_port'] ?? 3306) . ' / ' . ($cfg['db_name'] ?? ''), 'info', ''];
-    $c[] = ['Pengguna database', (string)($cfg['db_user'] ?? ''), ($cfg['db_user'] ?? '') === 'root' && !$local ? 'warn' : 'info',
-        ($cfg['db_user'] ?? '') === 'root' && !$local ? 'Di hosting, pakai pengguna database khusus, bukan root.' : ''];
+    $c[] = [kpi_t('Database'), (string)$db->query('SELECT VERSION()')->fetchColumn(), 'ok', ''];
+    $c[] = [kpi_t('Alamat database'), ($cfg['db_host'] ?? '') . ':' . ($cfg['db_port'] ?? 3306) . ' / ' . ($cfg['db_name'] ?? ''), 'info', ''];
+    $c[] = [kpi_t('Pengguna database'), (string)($cfg['db_user'] ?? ''), ($cfg['db_user'] ?? '') === 'root' && !$local ? 'warn' : 'info',
+        ($cfg['db_user'] ?? '') === 'root' && !$local ? kpi_t('Di hosting, pakai pengguna database khusus, bukan root.') : ''];
     if (!$local) {
-        $c[] = ['Password database', ($cfg['db_pass'] ?? '') === '' ? 'Kosong' : 'Terisi', ($cfg['db_pass'] ?? '') === '' ? 'bad' : 'ok',
-            ($cfg['db_pass'] ?? '') === '' ? 'Beri password pada pengguna database.' : ''];
+        $c[] = [kpi_t('Password database'), ($cfg['db_pass'] ?? '') === '' ? kpi_t('Kosong') : kpi_t('Terisi'), ($cfg['db_pass'] ?? '') === '' ? 'bad' : 'ok',
+            ($cfg['db_pass'] ?? '') === '' ? kpi_t('Beri password pada pengguna database.') : ''];
     }
-    $c[] = ['HTTPS', $https ? 'Aktif' : 'Tidak aktif', $https ? 'ok' : ($local ? 'info' : 'warn'),
-        $https || $local ? '' : 'Tanpa HTTPS, password bisa terbaca di jaringan. Aktifkan SSL di hosting.'];
+    $c[] = ['HTTPS', $https ? kpi_t('Aktif') : kpi_t('Tidak aktif'), $https ? 'ok' : ($local ? 'info' : 'warn'),
+        $https || $local ? '' : kpi_t('Tanpa HTTPS, password bisa terbaca di jaringan. Aktifkan SSL di hosting.')];
 
     $hasInstall = is_file(KPI_ROOT . '/install.php');
-    $c[] = ['File install.php', $hasInstall ? 'Masih ada' : 'Sudah dihapus', $hasInstall && !$local ? 'warn' : 'ok',
-        $hasInstall && !$local ? 'Hapus install.php dari hosting setelah pemasangan selesai.' : ''];
+    $c[] = [kpi_t('File {0}', 'install.php'), $hasInstall ? kpi_t('Masih ada') : kpi_t('Sudah dihapus'), $hasInstall && !$local ? 'warn' : 'ok',
+        $hasInstall && !$local ? kpi_t('Hapus install.php dari hosting setelah pemasangan selesai.') : ''];
 
     if (DIRECTORY_SEPARATOR === '/') {
         $perm  = @fileperms(KPI_CONFIG_FILE);
         $world = $perm !== false && ($perm & 0004);
-        $c[] = ['Izin file config.php', $perm !== false ? substr(sprintf('%o', $perm), -3) : '?', $world ? 'warn' : 'ok',
-            $world ? 'Ubah izin menjadi 640 supaya tidak terbaca pengguna lain di server.' : ''];
+        $c[] = [kpi_t('Izin file {0}', 'config.php'), $perm !== false ? substr(sprintf('%o', $perm), -3) : '?', $world ? 'warn' : 'ok',
+            $world ? kpi_t('Ubah izin menjadi 640 supaya tidak terbaca pengguna lain di server.') : ''];
     }
 
     $demo = kpi_setting('demo_mode', '0') === '1';
-    $c[] = ['Mode demo', $demo ? 'Aktif' : 'Mati', $demo && !$local ? 'warn' : 'info',
-        $demo ? 'Akun contoh tampil di halaman login. sysAdmin dapat mematikannya di Pengaturan aplikasi.' : ''];
+    $c[] = [kpi_t('Mode demo'), $demo ? kpi_t('Aktif') : kpi_t('Mati'), $demo && !$local ? 'warn' : 'info',
+        $demo ? kpi_t('Akun contoh tampil di halaman login. sysAdmin dapat mematikannya di Pengaturan aplikasi.') : ''];
 
     // Akun contoh yang masih memakai password bawaan.
     $weak = 0;
@@ -492,30 +492,30 @@ function kpi_infra_checks(): array
             $weak++;
         }
     }
-    $c[] = ['Password contoh bawaan', $weak ? $weak . ' akun masih memakainya' : 'Tidak ada', $weak ? ($local ? 'info' : 'bad') : 'ok',
-        $weak ? 'Ganti password akun contoh sebelum aplikasi dipakai sungguhan.' : ''];
+    $c[] = [kpi_t('Password contoh bawaan'), $weak ? kpi_t('{0} akun masih memakainya', $weak) : kpi_t('Tidak ada'), $weak ? ($local ? 'info' : 'bad') : 'ok',
+        $weak ? kpi_t('Ganti password akun contoh sebelum aplikasi dipakai sungguhan.') : ''];
 
     $inUse = [];
     foreach (kpi_admin_defaults_in_use($db) as $user => $pass) {
         $inUse[] = '"' . $user . '" (' . $pass . ')';
     }
-    $c[] = ['Password admin bawaan', $inUse ? 'Masih dipakai: ' . implode(', ', $inUse) : 'Sudah diganti', $inUse ? ($local ? 'warn' : 'bad') : 'ok',
-        $inUse ? 'Masuk dengan akun tersebut lalu ganti password di menu Akun saya.' : ''];
+    $c[] = [kpi_t('Password admin bawaan'), $inUse ? kpi_t('Masih dipakai: {0}', implode(', ', $inUse)) : kpi_t('Sudah diganti'), $inUse ? ($local ? 'warn' : 'bad') : 'ok',
+        $inUse ? kpi_t('Masuk dengan akun tersebut lalu ganti password di menu Akun saya.') : ''];
 
     $maint = kpi_setting('maintenance', '0') === '1';
-    $c[] = ['Mode pemeliharaan', $maint ? 'Aktif, aplikasi ditutup sementara' : 'Mati', $maint ? 'warn' : 'ok', ''];
+    $c[] = [kpi_t('Mode pemeliharaan'), $maint ? kpi_t('Aktif, aplikasi ditutup sementara') : kpi_t('Mati'), $maint ? 'warn' : 'ok', ''];
 
     $free = @disk_free_space(KPI_ROOT);
     if ($free !== false) {
         $low = $free < 200 * 1024 * 1024;
-        $c[] = ['Ruang disk tersisa', kpi_bytes((float)$free), $low ? 'warn' : 'ok', $low ? 'Ruang disk hampir habis.' : ''];
+        $c[] = [kpi_t('Ruang disk tersisa'), kpi_bytes((float)$free), $low ? 'warn' : 'ok', $low ? kpi_t('Ruang disk hampir habis.') : ''];
     }
     $sp = session_save_path() ?: sys_get_temp_dir();
     $sw = @is_writable($sp);
-    $c[] = ['Folder sesi', $sw ? 'Bisa ditulis' : 'Tidak bisa ditulis', $sw ? 'ok' : 'bad', $sw ? '' : 'Login tidak akan bertahan. Periksa session.save_path.'];
-    $c[] = ['Waktu server', date('Y-m-d H:i') . ' (' . date_default_timezone_get() . ')', 'info', ''];
-    $c[] = ['Waktu database', substr((string)$db->query('SELECT NOW()')->fetchColumn(), 0, 16), 'info', ''];
-    $c[] = ['Batas memori PHP', (string)ini_get('memory_limit'), 'info', ''];
+    $c[] = [kpi_t('Folder sesi'), $sw ? kpi_t('Bisa ditulis') : kpi_t('Tidak bisa ditulis'), $sw ? 'ok' : 'bad', $sw ? '' : kpi_t('Login tidak akan bertahan. Periksa session.save_path.')];
+    $c[] = [kpi_t('Waktu server'), date('Y-m-d H:i') . ' (' . date_default_timezone_get() . ')', 'info', ''];
+    $c[] = [kpi_t('Waktu database'), substr((string)$db->query('SELECT NOW()')->fetchColumn(), 0, 16), 'info', ''];
+    $c[] = [kpi_t('Batas memori PHP'), (string)ini_get('memory_limit'), 'info', ''];
 
     return $c;
 }
