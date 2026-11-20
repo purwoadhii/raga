@@ -45,12 +45,12 @@ Setelah `npm start`, ada tiga alamat:
 | `http://localhost:8000/sysAdmin` | sysAdmin: anggota, pengaturan aplikasi, akun admin |
 | `http://localhost:8000/infraAdmin` | infraAdmin: status server, cadangan database, mode pemeliharaan |
 
-Akun admin bawaan:
+Akun admin bawaan (keduanya bisa masuk ke `/sysAdmin` maupun `/infraAdmin`):
 
-| Alamat | Username | Password |
-| --- | --- | --- |
-| `/sysAdmin` | `admin` | `123456` |
-| `/infraAdmin` | `infraadmin` | `12345678` |
+| Username | Password |
+| --- | --- |
+| `admin` | `123456` |
+| `infraadmin` | `12345678` |
 
 Segera ganti kedua password itu di menu **Akun saya**. Penjelasan halaman admin ada di [kpi/README.md](kpi/README.md#halaman-admin).
 

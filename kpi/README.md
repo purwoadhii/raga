@@ -17,37 +17,39 @@ npm start
 
 ## Halaman admin
 
-Pengelolaan aplikasi punya link sendiri untuk tiap peran. Akunnya terpisah dari akun anggota, tidak punya KPI, dan tidak muncul di aplikasi.
+Pengelolaan aplikasi punya dua halaman admin. Akun admin terpisah dari akun anggota, tidak punya KPI, dan tidak muncul di aplikasi.
 
-| Peran | Link di komputer sendiri | Link di hosting |
+| Halaman | Link di komputer sendiri | Link di hosting |
 | --- | --- | --- |
 | sysAdmin | `http://localhost:8000/sysAdmin` | `https://domain-anda.com/kpi/sysAdmin` |
 | infraAdmin | `http://localhost:8000/infraAdmin` | `https://domain-anda.com/kpi/infraAdmin` |
 
 Alamat pendek di hosting memakai `mod_rewrite` (aturannya sudah ada di `.htaccess`, dan hampir semua hosting cPanel mengaktifkannya). Bila hosting Anda tidak mendukungnya, pakai alamat berakhiran `.php`: `sysadmin.php` dan `infraadmin.php`.
 
-Tiap link hanya menerima akun perannya. Akun infraAdmin yang mencoba masuk lewat link sysAdmin ditolak, dan sebaliknya. Sesinya juga terpisah, jadi keduanya bisa masuk bersamaan di satu browser. Link umum `admin.php` tetap ada dan menerima kedua peran.
+Semua akun admin yang aktif bisa masuk ke kedua halaman, apa pun perannya. Isi menu mengikuti halaman yang dibuka, bukan peran akun, jadi akun `admin` bisa membuka `/infraAdmin` dan akun `infraadmin` bisa membuka `/sysAdmin`. Peran (sysAdmin atau infraAdmin) hanya menjadi label akun. Sesi tiap halaman terpisah, jadi masuk ke `/sysAdmin` tidak otomatis membuka `/infraAdmin`; masuk sekali lagi di sana. Link umum `admin.php` tetap ada dan menampilkan menu sesuai peran akun.
 
-| Peran | Menu |
+| Halaman | Menu |
 | --- | --- |
 | **sysAdmin** | Ringkasan, Anggota (tambah, ubah, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Akun admin, Catatan aktivitas |
 | **infraAdmin** | Status server (PHP, database, HTTPS, izin file, ruang disk), Cadangan database (.sql), Mode pemeliharaan, Catatan aktivitas dan pembersihannya |
 
 **Akun admin bawaan.** Saat aplikasi disiapkan, dua akun dibuat otomatis:
 
-| Username | Password | Link |
+| Username | Password | Peran |
 | --- | --- | --- |
-| `admin` | `123456` | `/sysAdmin` |
-| `infraadmin` | `12345678` | `/infraAdmin` |
+| `admin` | `123456` | sysAdmin |
+| `infraadmin` | `12345678` | infraAdmin |
 
-Segera ganti kedua password ini di menu **Akun saya**. Selama belum diganti, halaman admin menampilkan pengingat dan Status server infraAdmin menandainya. Admin lain bisa ditambahkan oleh sysAdmin dari menu **Akun admin**.
+Keduanya bisa masuk ke `/sysAdmin` maupun `/infraAdmin`.
+
+Segera ganti kedua password ini di menu **Akun saya**. Selama belum diganti, halaman admin menampilkan pengingat dan Status server infraAdmin menandainya. Admin lain bisa ditambahkan dari menu **Akun admin** di `/sysAdmin`.
 
 Akun bawaan hanya dibuat sekali. Bila Anda menghapusnya, akun itu tidak muncul lagi, dan bila username-nya sudah Anda pakai untuk akun lain, akun itu tidak ditimpa. Bila semua akun admin terhapus, halaman admin meminta username dan password CEO sebagai bukti lalu membuat akun admin baru.
 
 Aturan pengaman:
 
 - Password admin minimal 8 karakter. Sesi admin berakhir sendiri setelah 60 menit tanpa kegiatan.
-- Setiap peran hanya bisa membuka menunya sendiri, dan server menolak tindakan di luar perannya.
+- Server hanya menerima tindakan yang memang ada di halaman yang sedang dibuka (misalnya cadangan database hanya dari `/infraAdmin`).
 - Harus selalu ada minimal satu sysAdmin aktif. Akun CEO tidak bisa dihapus, dan CEO satu-satunya tidak bisa dinonaktifkan.
 - Saat mode pemeliharaan aktif, aplikasi menampilkan halaman pemberitahuan dan tidak ada yang bisa masuk, tetapi halaman admin tetap bisa dibuka.
 - Semua tindakan admin tercatat di Catatan aktivitas.

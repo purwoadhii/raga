@@ -150,13 +150,13 @@ function adm_title(): string
     return KPI_ADMIN_GATE !== null ? KPI_ADMIN_ROLES[KPI_ADMIN_GATE] : kpi_t('Admin Panel');
 }
 
-/** Tautan ke halaman masuk peran lain, di bawah formulir masuk. */
+/** Tautan ke halaman admin yang lain, di bawah formulir masuk. */
 function adm_other_links(): string
 {
     $out = '';
     foreach (KPI_ADMIN_LINKS as $role => $file) {
         if ($role !== KPI_ADMIN_GATE) {
-            $out .= '<a href="' . h($file) . '">' . ht('Masuk sebagai {0}', KPI_ADMIN_ROLES[$role]) . '</a> · ';
+            $out .= '<a href="' . h($file) . '">' . ht('Buka halaman {0}', KPI_ADMIN_ROLES[$role]) . '</a> · ';
         }
     }
     return $out;
@@ -174,7 +174,7 @@ function adm_page_guest(string $body, ?array $flash, bool $wide): string
         . '</main></body></html>';
 }
 
-function adm_page(array $admin, array $pages, string $page, string $body, ?array $flash, string $csrf): string
+function adm_page(array $admin, string $panel, array $pages, string $page, string $body, ?array $flash, string $csrf): string
 {
     $role  = $admin['role'];
     $title = kpi_t($pages[$page]);
@@ -192,11 +192,11 @@ function adm_page(array $admin, array $pages, string $page, string $body, ?array
     }
 
     return adm_head($title . ' · ' . adm_title())
-        . '<body class="role-' . h($role) . '">'
+        . '<body class="panel-' . h($panel) . ' role-' . h($role) . '">'
         . '<header class="top"><a class="brand" href="' . ADM_SELF . '"><img src="assets/logo.png" alt="" width="34" height="34">'
         . '<span><b>' . h(adm_title()) . '</b><small>Key Performance Indicator</small></span></a>'
         . '<div class="who">' . adm_lang_menu('on-dark')
-        . '<span class="role' . (KPI_ADMIN_GATE !== null ? ' dup' : '') . '">' . h(KPI_ADMIN_ROLES[$role]) . '</span>'
+        . '<span class="role" title="' . ht('Peran') . '">' . h(KPI_ADMIN_ROLES[$role]) . '</span>'
         . '<span class="who-name">' . h($admin['name']) . '</span>'
         . '<form method="post" action="' . ADM_SELF . '">' . adm_csrf_field($csrf)
         . '<input type="hidden" name="_act" value="logout"><button class="btn ghost" type="submit">' . ht('Keluar') . '</button></form></div></header>'
@@ -211,9 +211,7 @@ function adm_view_login(string $csrf, array $old): string
 {
     return '<form class="card form" method="post" action="' . ADM_SELF . '" autocomplete="off">' . adm_csrf_field($csrf)
         . '<input type="hidden" name="_act" value="login">'
-        . '<p class="muted">' . (KPI_ADMIN_GATE !== null
-            ? ht('Halaman ini khusus untuk akun {0}. Akun admin berbeda dari akun anggota di aplikasi KPI.', KPI_ADMIN_ROLES[KPI_ADMIN_GATE])
-            : ht('Masuk dengan akun sysAdmin atau infraAdmin. Akun ini berbeda dari akun anggota di aplikasi KPI.')) . '</p>'
+        . '<p class="muted">' . ht('Masuk dengan akun sysAdmin atau infraAdmin. Akun ini berbeda dari akun anggota di aplikasi KPI.') . '</p>'
         . adm_input(kpi_t('Username'), 'username', $old['username'] ?? '', ['required' => true, 'autofocus' => true, 'autocapitalize' => 'none'])
         . adm_input(kpi_t('Password'), 'password', '', ['type' => 'password', 'required' => true])
         . '<button class="btn primary block" type="submit">' . ht('Masuk') . '</button></form>';
@@ -331,7 +329,7 @@ function adm_view_overview(array $ctx): string
 {
     $o  = kpi_overview();
     $lv = $o['levels'];
-    $html = '<p class="lead">' . hx('Anda masuk sebagai {0}. Dari sini Anda mengurus anggota, pengaturan aplikasi, dan akun admin.', '<b>sysAdmin</b>') . '</p>'
+    $html = '<p class="lead">' . hx('Ini halaman {0}. Dari sini Anda mengurus anggota, pengaturan aplikasi, dan akun admin.', '<b>sysAdmin</b>') . '</p>'
         . '<div class="stats">'
         . adm_stat(kpi_t('Anggota'), kpi_num($o['users']), kpi_t('{0} CEO, {1} Division Head, {2} Unit Head, {3} Staff', $lv['ceo'], $lv['div'], $lv['unit'], $lv['staff']))
         . adm_stat(kpi_t('KPI'), kpi_num($o['kpis']), $o['no_kpi'] ? kpi_t('{0} anggota belum punya KPI', $o['no_kpi']) : kpi_t('Semua anggota sudah punya KPI'), $o['no_kpi'] ? 'warn' : '')
@@ -530,7 +528,8 @@ function adm_view_admins(array $ctx): string
         . '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>' . ht('Nama') . '</th><th>' . ht('Peran') . '</th><th>' . ht('Username') . '</th>'
         . '<th>' . ht('Status') . '</th><th>' . ht('Terakhir masuk') . '</th><th></th></tr></thead><tbody>'
         . $rows . '</tbody></table></div></section>'
-        . '<section class="card"><h2>' . ht('Perbedaan kedua peran') . '</h2><div class="grid2 roles">'
+        . '<section class="card"><h2>' . ht('Isi kedua halaman admin') . '</h2>'
+        . '<p class="muted">' . ht('Semua akun admin yang aktif bisa masuk ke kedua halaman. Peran hanya menjadi label akun.') . '</p><div class="grid2 roles">'
         . '<div><h3>' . adm_pill('sysAdmin', 'sys') . '</h3><ul><li>' . ht('Menambah, mengubah, menonaktifkan, dan menghapus anggota') . '</li>'
         . '<li>' . ht('Mengganti password anggota dan membuka kunci login') . '</li>'
         . '<li>' . ht('Mengubah pengaturan aplikasi') . '</li><li>' . ht('Mengelola akun admin') . '</li></ul></div>'
@@ -554,7 +553,7 @@ function adm_admin_form(array $ctx, ?array $a): string
         . '<h2>' . ($a ? ht('Ubah akun {0}', $a['name']) : ht('Tambah admin')) . '</h2><div class="grid2">'
         . adm_input(kpi_t('Nama'), 'name', $val('name', $a['name'] ?? ''), ['required' => true, 'maxlength' => 120])
         . adm_select(kpi_t('Peran'), 'role', KPI_ADMIN_ROLES, $val('role', $a['role'] ?? 'infraadmin'),
-            kpi_t('sysAdmin mengurus isi aplikasi. infraAdmin mengurus server dan cadangan.'))
+            kpi_t('Semua akun admin yang aktif bisa masuk ke kedua halaman. Peran hanya menjadi label akun.'))
         . adm_input(kpi_t('Username'), 'username', $val('username', $a['username'] ?? ''), ['required' => true, 'maxlength' => 64, 'autocapitalize' => 'none'])
         . adm_input($a ? kpi_t('Password baru') : kpi_t('Password'), 'password', '', ['type' => 'password', 'minlength' => KPI_ADMIN_MIN_PASS, 'required' => !$a,
             'hint' => $a ? kpi_t('Kosongkan bila tidak ingin mengganti password.') : kpi_t('Minimal {0} karakter.', KPI_ADMIN_MIN_PASS)])
@@ -593,7 +592,7 @@ function adm_view_status(array $ctx): string
         $rows .= '<tr><td><b>' . h($name) . '</b>' . ($hint !== '' ? '<div class="muted small">' . h($hint) . '</div>' : '') . '</td>'
             . '<td><bdi>' . h($value) . '</bdi></td><td class="right">' . adm_pill(kpi_t($label[$state]), $state) . '</td></tr>';
     }
-    $html = '<p class="lead">' . hx('Anda masuk sebagai {0}. Dari sini Anda memantau server, mengambil cadangan, dan mengatur mode pemeliharaan.', '<b>infraAdmin</b>') . '</p>'
+    $html = '<p class="lead">' . hx('Ini halaman {0}. Dari sini Anda memantau server, mengambil cadangan, dan mengatur mode pemeliharaan.', '<b>infraAdmin</b>') . '</p>'
         . '<div class="stats">'
         . adm_stat(kpi_t('Baik'), kpi_num($count['ok']), kpi_t('Pemeriksaan yang lolos'))
         . adm_stat(kpi_t('Perlu diperhatikan'), kpi_num($count['warn']), $count['warn'] ? kpi_t('Lihat saran di tabel') : kpi_t('Tidak ada'), $count['warn'] ? 'warn' : '')
@@ -674,7 +673,7 @@ function adm_view_activity(array $ctx): string
         . '<div class="tbl-wrap"><table><thead><tr><th>' . ht('Waktu') . '</th><th>' . ht('Pelaku') . '</th><th>' . ht('Kegiatan') . '</th><th>' . ht('Rincian') . '</th></tr></thead><tbody>'
         . ($rows ?: '<tr><td colspan="4" class="muted">' . ht('Belum ada kegiatan.') . '</td></tr>') . '</tbody></table></div></section>';
 
-    if ($ctx['admin']['role'] === 'infraadmin') {
+    if ($ctx['panel'] === 'infraadmin') {
         $html .= '<section class="card"><h2>' . ht('Bersihkan catatan lama') . '</h2>'
             . '<p class="muted">' . ht('Catatan aktivitas terus bertambah. Hapus yang sudah lama supaya database tetap ringan. Data KPI tidak terpengaruh.') . '</p>'
             . '<form class="inline" method="post" action="' . ADM_SELF . '">' . adm_csrf_field($ctx['csrf'])

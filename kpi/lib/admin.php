@@ -33,7 +33,7 @@ if (!defined('KPI_ADMIN_GATE')) {
     define('KPI_ADMIN_GATE', null);
 }
 
-/** Halaman yang boleh dibuka tiap peran: kunci => judul menu. */
+/** Menu di tiap halaman admin: kunci => judul menu. */
 const KPI_ADMIN_PAGES = [
     'sysadmin' => [
         'ringkasan'  => 'Ringkasan',
@@ -51,6 +51,16 @@ const KPI_ADMIN_PAGES = [
         'akun'         => 'Akun saya',
     ],
 ];
+
+/**
+ * Halaman admin yang sedang dibuka: sysadmin atau infraadmin. Semua akun admin aktif boleh
+ * masuk ke /sysAdmin maupun /infraAdmin, dan isinya mengikuti alamat yang dibuka. Lewat link
+ * umum admin.php, isinya mengikuti peran akun.
+ */
+function kpi_admin_panel(array $admin): string
+{
+    return KPI_ADMIN_GATE ?? $admin['role'];
+}
 
 /** Membuat tabel admins bila belum ada (pemasangan sebelum fitur ini). */
 function kpi_admin_ensure_schema(): void
@@ -117,7 +127,7 @@ function kpi_admin_current(): ?array
     $st = db()->prepare('SELECT * FROM admins WHERE id = ? AND is_active = 1');
     $st->execute([(int)$_SESSION['aid']]);
     $row = $st->fetch();
-    if (!$row || !isset(KPI_ADMIN_ROLES[$row['role']]) || (KPI_ADMIN_GATE !== null && $row['role'] !== KPI_ADMIN_GATE)) {
+    if (!$row || !isset(KPI_ADMIN_ROLES[$row['role']])) {
         kpi_admin_logout();
         return null;
     }
@@ -158,10 +168,6 @@ function kpi_admin_login(string $username, string $password): array
         throw new KpiApiError($generic, 401);
     }
     kpi_clear_failures($key);
-    if (KPI_ADMIN_GATE !== null && $row['role'] !== KPI_ADMIN_GATE) {
-        throw new KpiApiError('Akun ini adalah {0}. Silakan masuk lewat alamat {1}', 403,
-            [KPI_ADMIN_ROLES[$row['role']], kpi_app_url(KPI_ADMIN_LINKS[$row['role']])]);
-    }
     kpi_admin_session_start();
     session_regenerate_id(true);
     $_SESSION['aid']  = (int)$row['id'];
