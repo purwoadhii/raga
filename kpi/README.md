@@ -28,8 +28,6 @@ Alamat pendek di hosting memakai `mod_rewrite` (aturannya sudah ada di `.htacces
 
 Semua akun admin yang aktif bisa masuk ke kedua halaman, apa pun perannya. Isi menu mengikuti halaman yang dibuka, bukan peran akun, jadi akun `admin` bisa membuka `/infraAdmin` dan akun `infraadmin` bisa membuka `/sysAdmin`. Peran (sysAdmin atau infraAdmin) hanya menjadi label akun. Sesi tiap halaman terpisah, jadi masuk ke `/sysAdmin` tidak otomatis membuka `/infraAdmin`; masuk sekali lagi di sana. Link umum `admin.php` tetap ada dan menampilkan menu sesuai peran akun.
 
-Akun admin juga bisa dipakai di halaman masuk aplikasi (`http://localhost:8000`). Setelah username dan password admin diisi, browser langsung membuka halaman admin sesuai peran akun, dalam keadaan sudah masuk: akun sysAdmin ke `/sysAdmin` dan akun infraAdmin ke `/infraAdmin`. Admin tidak ikut masuk ke aplikasi anggota, karena admin tidak punya KPI.
-
 | Halaman | Menu |
 | --- | --- |
 | **sysAdmin** | Ringkasan, Anggota (tambah, ubah, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Akun admin, Catatan aktivitas |

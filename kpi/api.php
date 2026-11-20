@@ -9,7 +9,6 @@ declare(strict_types=1);
 require __DIR__ . '/lib/db.php';
 require __DIR__ . '/lib/handlers.php';
 require __DIR__ . '/lib/auth.php';
-require __DIR__ . '/lib/admin.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');

@@ -300,11 +300,8 @@ function kpi_handle(string $action, array $in): array
     switch ($action) {
 
         case 'login': {
-            $login = kpi_login(in_str($in, 'username', 64), (string)($in['password'] ?? ''));
-            if (isset($login['admin'])) {
-                return ['redirect' => $login['admin']]; // akun admin: browser pindah ke halaman admin
-            }
-            return ['data' => kpi_bootstrap($login['user']), 'csrf' => kpi_csrf_token()];
+            $user = kpi_login(in_str($in, 'username', 64), (string)($in['password'] ?? ''));
+            return ['data' => kpi_bootstrap($user), 'csrf' => kpi_csrf_token()];
         }
 
         case 'logout': {
