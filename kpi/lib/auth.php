@@ -120,11 +120,6 @@ function kpi_clear_failures(string $username): void
     $st->execute([kpi_attempt_key($username)]);
 }
 
-/**
- * Masuk lewat halaman aplikasi. Mengembalikan ['user' => baris anggota]. Bila username dan
- * password ini milik akun admin, sesi admin langsung dibuka dan yang dikembalikan
- * ['admin' => alamat halaman admin], supaya browser pindah ke sana tanpa perlu masuk lagi.
- */
 function kpi_login(string $username, string $password): array
 {
     $username = mb_strtolower(trim($username));
@@ -143,9 +138,10 @@ function kpi_login(string $username, string $password): array
     $user = $st->fetch();
 
     if (!$user || !$user['is_active'] || !password_verify($password, $user['password_hash'])) {
-        if (kpi_is_admin_login($username, $password)) {
-            kpi_clear_failures($username);
-            return ['admin' => kpi_admin_login_from_app($username, $password)];
+        $adminPage = kpi_admin_page_for($username, $password);
+        if ($adminPage !== null) {
+            throw new KpiApiError('Ini akun admin, bukan akun anggota. Masuk lewat halaman admin: {0}',
+                401, [kpi_app_url($adminPage)]);
         }
         kpi_note_failure($username);
         usleep(300000);
@@ -163,20 +159,39 @@ function kpi_login(string $username, string $password): array
     $_SESSION['uid']  = (int)$user['id'];
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
     kpi_log((string)$user['id'], 'login', $user['username']);
-    return ['user' => $user];
+    return $user;
 }
 
-/** Username dan password ini milik akun admin yang aktif. */
-function kpi_is_admin_login(string $username, string $password): bool
+/**
+ * Bila username dan password ini milik akun admin, kembalikan halaman masuknya
+ * (sysAdmin atau infraAdmin), supaya orang yang salah halaman diberi petunjuk.
+ */
+function kpi_admin_page_for(string $username, string $password): ?string
 {
     try {
-        $st = db()->prepare('SELECT password_hash FROM admins WHERE username = ? AND is_active = 1');
+        $st = db()->prepare('SELECT role, password_hash FROM admins WHERE username = ? AND is_active = 1');
         $st->execute([$username]);
-        $hash = $st->fetchColumn();
+        $row = $st->fetch();
     } catch (Throwable $e) {
-        return false; // tabel admins belum ada
+        return null; // tabel admins belum ada
     }
-    return is_string($hash) && password_verify($password, $hash);
+    if (!$row || !password_verify($password, (string)$row['password_hash'])) {
+        return null;
+    }
+    return $row['role'] === 'infraadmin' ? 'infraAdmin' : 'sysAdmin';
+}
+
+/** Alamat lengkap sebuah halaman aplikasi, dari alamat permintaan yang sedang berjalan. */
+function kpi_app_url(string $page): string
+{
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+    if ($host === '' || !preg_match('/^[A-Za-z0-9.\-:\[\]]+$/', $host)) {
+        return $page;
+    }
+    $dir = rtrim(str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/'))), '/');
+    return ($https ? 'https' : 'http') . '://' . $host . $dir . '/' . $page;
 }
 
 /* ---------- Struktur organisasi dan hak akses ---------- */

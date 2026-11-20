@@ -1,6 +1,6 @@
 <?php
 /**
- * Link khusus halaman infraAdmin. Semua akun admin yang aktif bisa masuk lewat halaman ini.
+ * Link khusus infraAdmin. Hanya akun infraAdmin yang bisa masuk lewat halaman ini.
  */
 
 define('KPI_ADMIN_GATE', 'infraadmin');

@@ -79,16 +79,11 @@ function kpi_admin_uses_default_password(array $admin): bool
 
 /* ---------- Sesi admin (terpisah dari sesi aplikasi) ---------- */
 
-/**
- * Membuka sesi admin. $gate memilih cookie sesinya (sysadmin atau infraadmin); bila kosong,
- * dipakai halaman admin yang sedang dibuka.
- */
-function kpi_admin_session_start(?string $gate = null): void
+function kpi_admin_session_start(): void
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
         return;
     }
-    $gate ??= KPI_ADMIN_GATE;
     $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
     session_set_cookie_params([
@@ -99,7 +94,7 @@ function kpi_admin_session_start(?string $gate = null): void
         'samesite' => 'Strict',
     ]);
     // Tiap link punya sesi sendiri, jadi sysAdmin dan infraAdmin bisa masuk bersamaan di satu browser.
-    session_name($gate !== null ? 'KPIADM_' . $gate : 'KPIADMSESS');
+    session_name(KPI_ADMIN_GATE !== null ? 'KPIADM_' . KPI_ADMIN_GATE : 'KPIADMSESS');
     session_start();
     if (empty($_SESSION['csrf'])) {
         $_SESSION['csrf'] = bin2hex(random_bytes(32));
@@ -151,8 +146,7 @@ function kpi_admin_logout(): void
     session_destroy();
 }
 
-/** $gate: cookie sesi yang dibuka, bila login tidak dilakukan dari halaman admin itu sendiri. */
-function kpi_admin_login(string $username, string $password, ?string $gate = null): array
+function kpi_admin_login(string $username, string $password): array
 {
     $username = mb_strtolower(trim($username));
     $generic  = 'Username atau password salah.';
@@ -174,7 +168,7 @@ function kpi_admin_login(string $username, string $password, ?string $gate = nul
         throw new KpiApiError($generic, 401);
     }
     kpi_clear_failures($key);
-    kpi_admin_session_start($gate);
+    kpi_admin_session_start();
     session_regenerate_id(true);
     $_SESSION['aid']  = (int)$row['id'];
     $_SESSION['seen'] = time();
@@ -182,30 +176,6 @@ function kpi_admin_login(string $username, string $password, ?string $gate = nul
     db()->prepare('UPDATE admins SET last_login_at = NOW() WHERE id = ?')->execute([$row['id']]);
     kpi_admin_log($row, 'admin_login', '');
     return $row;
-}
-
-/**
- * Masuk dengan akun admin dari halaman masuk aplikasi. Sesi admin dibuka untuk halaman
- * peran akun itu, lalu alamat pendeknya dikembalikan (sysAdmin atau infraAdmin) supaya
- * browser langsung membukanya. Sesi aplikasi yang sedang terbuka ditutup lebih dulu,
- * karena sesi admin memakai cookie sendiri.
- */
-function kpi_admin_login_from_app(string $username, string $password): string
-{
-    $st = db()->prepare('SELECT role FROM admins WHERE username = ?');
-    $st->execute([mb_strtolower(trim($username))]);
-    $gate = (string)$st->fetchColumn();
-    if (!isset(KPI_ADMIN_LINKS[$gate])) {
-        $gate = 'sysadmin';
-    }
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        session_write_close();
-    }
-    // Sesi baru dengan id baru, supaya tidak memakai id sesi aplikasi.
-    session_id(bin2hex(random_bytes(16)));
-    kpi_admin_login($username, $password, $gate);
-    session_write_close();
-    return KPI_ADMIN_LINKS[$gate];
 }
 
 /** Catatan aktivitas untuk tindakan admin. */
