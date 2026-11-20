@@ -52,6 +52,8 @@ Akun admin bawaan (keduanya bisa masuk ke `/sysAdmin` maupun `/infraAdmin`):
 | `admin` | `123456` |
 | `infraadmin` | `12345678` |
 
+Akun admin juga bisa dipakai di halaman masuk `http://localhost:8000`. Browser langsung membuka halaman admin sesuai peran akun: `admin` ke `/sysAdmin`, `infraadmin` ke `/infraAdmin`.
+
 Segera ganti kedua password itu di menu **Akun saya**. Penjelasan halaman admin ada di [kpi/README.md](kpi/README.md#halaman-admin).
 
 Tidak perlu `npm install`, karena tidak ada paket tambahan yang dipakai. `npm run setup` aman dijalankan lagi: bila aplikasi sudah disiapkan, datanya tidak diubah.

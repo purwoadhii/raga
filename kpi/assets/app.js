@@ -474,7 +474,8 @@ const A={
     if(!un||!pw){err.textContent=t('err');return}
     if(busy)return;busy=true;btn.disabled=true;
     api('login',{username:un,password:pw})
-      .then(()=>{P.page='home';P.view=null;render();toast(tx('Selamat datang, {0}',me().name))})
+      .then(j=>{if(j.redirect){location.href=j.redirect;return} // akun admin: buka halaman admin
+        P.page='home';P.view=null;render();toast(tx('Selamat datang, {0}',me().name))})
       .catch(e=>{err.textContent=e.message;btn.disabled=false})
       .finally(()=>{busy=false})},
   demo(el){$('#lg-user').value=el.dataset.u;$('#lg-pin').value=el.dataset.p;A.login()},
