@@ -202,5 +202,5 @@ legend{font-family:var(--f-head);font-size:13.5px;font-weight:600;padding:0 6px}
 @media (max-width:520px){
   .top{gap:8px}
   .who{gap:8px}
-  .role.dup{display:none}
+  .top .role{display:none}
 }

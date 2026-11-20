@@ -107,7 +107,8 @@ try {
 
     $admin  = kpi_admin_current();
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-    $pages  = $admin ? KPI_ADMIN_PAGES[$admin['role']] : [];
+    $panel  = $admin ? kpi_admin_panel($admin) : '';
+    $pages  = $admin ? KPI_ADMIN_PAGES[$panel] : [];
     $home   = $admin ? (string)array_key_first($pages) : '';
 
     /* ================= Tindakan (POST) ================= */
@@ -135,10 +136,10 @@ try {
                 adm_go();
             }
             $aid  = (int)$admin['id'];
-            $role = $admin['role'];
-            $need = function (string $r) use ($role): void {
-                if ($role !== $r) {
-                    throw new KpiApiError('Tindakan ini hanya untuk {0}.', 403, [KPI_ADMIN_ROLES[$r]]);
+            // Tindakan mengikuti halaman yang sedang dibuka, bukan peran akun.
+            $need = function (string $r) use ($panel): void {
+                if ($panel !== $r) {
+                    throw new KpiApiError('Tindakan ini hanya bisa dilakukan di halaman {0}.', 403, [KPI_ADMIN_ROLES[$r]]);
                 }
             };
 
@@ -345,7 +346,7 @@ try {
     if (!isset($pages[$page])) {
         $page = $home;
     }
-    $ctx = ['csrf' => $csrf, 'old' => is_array($old) ? $old : [], 'admin' => $admin, 'get' => $_GET];
+    $ctx = ['csrf' => $csrf, 'old' => is_array($old) ? $old : [], 'admin' => $admin, 'panel' => $panel, 'get' => $_GET];
 
     switch ($page) {
         case 'ringkasan':    $body = adm_view_overview($ctx); break;
@@ -358,7 +359,7 @@ try {
         case 'aktivitas':    $body = adm_view_activity($ctx); break;
         default:             $body = adm_view_account($ctx); break;
     }
-    echo adm_page($admin, $pages, $page, $body, $flash, $csrf);
+    echo adm_page($admin, $panel, $pages, $page, $body, $flash, $csrf);
 } catch (Throwable $e) {
     error_log('[KPI admin] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
     http_response_code(500);
