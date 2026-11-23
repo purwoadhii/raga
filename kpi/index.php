@@ -9,6 +9,7 @@ declare(strict_types=1);
 require __DIR__ . '/lib/db.php';
 require __DIR__ . '/lib/handlers.php';
 require __DIR__ . '/lib/auth.php';
+require __DIR__ . '/lib/ui.php';
 
 if (!kpi_is_installed()) {
     header('Location: install.php');
@@ -31,7 +32,7 @@ try {
            . '@media (prefers-color-scheme:dark){body{background:#0E1120;color:#E7E9F3}div{background:#161A2C!important;border-color:#2B3150!important}}'
            . 'div{max-width:480px;background:#fff;border:1px solid #DCE0EB;border-radius:14px;padding:28px;text-align:center}'
            . 'img{width:56px;height:56px}h1{font-size:21px;margin:12px 0 8px}p{margin:0;opacity:.8}</style>'
-           . '<div><img src="assets/logo.png" alt=""><h1>' . $title . '</h1><p>'
+           . '<div><img src="' . htmlspecialchars(kpi_ui_logo(), ENT_QUOTES) . '" alt=""><h1>' . $title . '</h1><p>'
            . htmlspecialchars($maintenance, ENT_QUOTES) . '</p></div></html>';
         exit;
     }
@@ -42,6 +43,8 @@ try {
     $company  = (string)kpi_setting('company', 'Perusahaan');
     $demo     = kpi_setting('demo_mode', '0') === '1';
     $demoList = $demo ? json_decode((string)kpi_setting('demo_accounts', '[]'), true) : [];
+    $ui       = kpi_ui_boot();
+    $uiCss    = kpi_ui_css();
 } catch (Throwable $e) {
     http_response_code(500);
     header('Content-Type: text/html; charset=utf-8');
@@ -70,11 +73,13 @@ header('Referrer-Policy: same-origin');
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>Key Performance Indicator<?= $company !== '' ? ' · ' . htmlspecialchars($company, ENT_QUOTES) : '' ?></title>
-<link rel="icon" href="assets/logo.png">
+<link rel="icon" href="<?= htmlspecialchars($ui['logo'], ENT_QUOTES) ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@600;700&display=swap">
 <link rel="stylesheet" href="assets/app.css?v=<?= htmlspecialchars($ver, ENT_QUOTES) ?>">
+<?php if ($uiCss !== ''): ?><style id="ui-theme"><?= $uiCss ?></style>
+<?php endif; ?>
 </head>
 <body>
 <div id="app"></div>
@@ -87,6 +92,7 @@ window.__BOOT__ = {
   demoAccounts: <?= json_encode(is_array($demoList) ? $demoList : [], JSON_UNESCAPED_UNICODE) ?>,
   lang: <?= json_encode(kpi_lang()) ?>,
   langSet: <?= kpi_lang_cookie() !== null ? 'true' : 'false' ?>,
+  ui: <?= json_encode($ui, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>,
   data: <?= $boot ? json_encode($boot, JSON_UNESCAPED_UNICODE) : 'null' ?>
 };
 </script>

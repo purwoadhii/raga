@@ -1,1 +1,4 @@
 kpi/config.php
+# Gambar yang diunggah lewat menu Tampilan sysAdmin
+kpi/uploads/*
+!kpi/uploads/.htaccess

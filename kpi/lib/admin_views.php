@@ -26,6 +26,7 @@ const ADM_ACTION_NAMES = [
     'buka_kunci'           => 'Membuka kunci login',
     'change_password'      => 'Mengganti password',
     'settings_save'        => 'Mengubah pengaturan',
+    'tampilan_ubah'        => 'Mengubah tampilan',
     'admin_awal'           => 'Membuat admin pertama',
     'admin_login'          => 'Admin masuk',
     'admin_login_gagal'    => 'Admin gagal masuk',
@@ -96,7 +97,7 @@ function adm_head(string $title): string
         . '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
         . '<meta name="robots" content="noindex, nofollow">'
         . '<title>' . h($title) . '</title>'
-        . '<link rel="icon" href="assets/logo.png">'
+        . '<link rel="icon" href="' . h(kpi_ui_logo()) . '">'
         . '<link rel="preconnect" href="https://fonts.googleapis.com">'
         . '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
         . '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Sora:wght@600;700&display=swap">'
@@ -167,7 +168,7 @@ function adm_page_guest(string $body, ?array $flash, bool $wide): string
     return adm_head(adm_title() . ' · Key Performance Indicator')
         . '<body><main class="guest' . ($wide ? ' wide' : '') . '">'
         . '<div class="guest-tools">' . adm_lang_menu('on-light') . '</div>'
-        . '<div class="guest-brand"><img src="assets/logo.png" alt="" width="52" height="52">'
+        . '<div class="guest-brand"><img src="' . h(kpi_ui_logo()) . '" alt="" width="52" height="52">'
         . '<div><span class="eyebrow">Key Performance Indicator</span><h1>' . h(adm_title()) . '</h1></div></div>'
         . adm_flash_html($flash) . $body
         . '<p class="guest-foot">' . adm_other_links() . '<a href="index.php">' . ht('Kembali ke aplikasi KPI') . '</a></p>'
@@ -193,7 +194,7 @@ function adm_page(array $admin, string $panel, array $pages, string $page, strin
 
     return adm_head($title . ' · ' . adm_title())
         . '<body class="panel-' . h($panel) . ' role-' . h($role) . '">'
-        . '<header class="top"><a class="brand" href="' . ADM_SELF . '"><img src="assets/logo.png" alt="" width="34" height="34">'
+        . '<header class="top"><a class="brand" href="' . ADM_SELF . '"><img src="' . h(kpi_ui_logo()) . '" alt="" width="34" height="34">'
         . '<span><b>' . h(adm_title()) . '</b><small>Key Performance Indicator</small></span></a>'
         . '<div class="who">' . adm_lang_menu('on-dark')
         . '<span class="role" title="' . ht('Peran') . '">' . h(KPI_ADMIN_ROLES[$role]) . '</span>'
@@ -496,6 +497,113 @@ function adm_view_settings(array $ctx): string
         . '<label class="check"><input type="checkbox" name="demo_mode" value="1"' . ($demo ? ' checked' : '') . '>'
         . '<span><b>' . ht('Tampilkan akun contoh di halaman login') . '</b><small>' . ht('Matikan sebelum aplikasi dipakai sungguhan.') . '</small></span></label>'
         . '<div class="actions"><button class="btn primary" type="submit">' . ht('Simpan pengaturan') . '</button></div></form>';
+}
+
+/* ---------- sysAdmin: Tampilan ---------- */
+
+/** Satu tempat gambar: contoh gambar sekarang, tombol unggah, dan tombol kembali ke bawaan. */
+function adm_ui_slot(string $csrf, string $slot, string $title, string $desc, string $default, string $kind): string
+{
+    $own  = kpi_ui_image($slot);
+    $prev = $own !== null ? '<img src="' . h($own) . '" alt="">' : $default;
+    $keep = '<input type="hidden" name="_back" value="tampilan"><input type="hidden" name="slot" value="' . h($slot) . '">';
+    return '<div class="media" id="ui-' . h($slot) . '">'
+        . '<div class="media-prev ' . h($kind) . '">' . $prev . '</div>'
+        . '<div class="media-body"><div class="media-h"><h3>' . ht($title) . '</h3>'
+        . ($own !== null ? adm_pill(kpi_t('Gambar sendiri'), 'ok') : adm_pill(kpi_t('Bawaan'), '')) . '</div>'
+        . '<p class="muted small">' . ht($desc) . '</p>'
+        . '<form class="upload" method="post" action="' . ADM_SELF . '" enctype="multipart/form-data">' . adm_csrf_field($csrf)
+        . '<input type="hidden" name="_act" value="ui_upload">' . $keep
+        . '<input type="file" name="image" accept="image/png,image/jpeg,image/webp,image/gif" required aria-label="' . ht('Pilih gambar') . '">'
+        . '<button class="btn primary" type="submit">' . ht('Unggah') . '</button></form>'
+        . ($own !== null
+            ? '<form method="post" action="' . ADM_SELF . '">' . adm_csrf_field($csrf) . '<input type="hidden" name="_act" value="ui_remove">' . $keep
+              . '<button class="btn danger-soft" type="submit">' . ht('Pakai bawaan lagi') . '</button></form>'
+            : '')
+        . '</div></div>';
+}
+
+/** Pilihan berupa kartu bergambar (radio). */
+function adm_ui_choice(string $name, string $value, bool $checked, string $img, string $label, string $note = ''): string
+{
+    return '<label class="theme"><input type="radio" name="' . h($name) . '" value="' . h($value) . '"' . ($checked ? ' checked' : '') . '>'
+        . '<img src="' . h($img) . '" alt="" width="160" height="96">'
+        . '<span class="theme-name">' . $label . ($note !== '' ? '<small>' . $note . '</small>' : '') . '</span></label>';
+}
+
+function adm_view_appearance(array $ctx): string
+{
+    $csrf   = $ctx['csrf'];
+    $key    = kpi_ui_theme_key();
+    $custom = (string)kpi_setting('ui_color', '');
+    if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $custom)) {
+        $custom = kpi_ui_color();
+    }
+    $custom = strtolower($custom);
+    $back   = '<input type="hidden" name="_back" value="tampilan">';
+
+    // Warna template
+    $themes = '';
+    foreach (KPI_UI_THEMES as $k => [$label, $hex]) {
+        $themes .= adm_ui_choice('theme', $k, $k === $key, kpi_ui_preview_svg($hex), ht($label),
+            $k === KPI_UI_DEFAULT_THEME ? ht('Bawaan') : '');
+    }
+    $themes .= '<div class="theme own"><label class="theme-pick"><input type="radio" name="theme" value="custom"' . ($key === 'custom' ? ' checked' : '') . '>'
+        . '<img src="' . h(kpi_ui_preview_svg($custom)) . '" alt="" width="160" height="96">'
+        . '<span class="theme-name">' . ht('Warna sendiri') . '</span></label>'
+        . '<label class="color-field"><span>' . ht('Pilih warna') . '</span><input type="color" name="color" value="' . h($custom) . '"></label>'
+        . '<input type="hidden" name="color_was" value="' . h($custom) . '"></div>';
+
+    $html = '<div class="toolbar"><p class="lead">' . ht('Atur tampilan aplikasi KPI untuk semua anggota. Perubahan langsung berlaku saat halaman aplikasi dimuat ulang.') . '</p>'
+        . '<a class="btn" href="index.php" target="_blank" rel="noopener">' . ht('Buka aplikasi KPI') . '</a></div>'
+
+        . '<form class="card form" id="ui-theme" method="post" action="' . ADM_SELF . '">' . adm_csrf_field($csrf)
+        . '<input type="hidden" name="_act" value="ui_theme_save">' . $back
+        . '<div><h2>' . ht('Warna template') . '</h2><p class="muted">' . ht('Warna tombol, menu, tautan, dan panel halaman masuk. Tampilan gelap ikut menyesuaikan.') . '</p></div>'
+        . '<div class="themes">' . $themes . '</div>'
+        . '<div class="actions"><button class="btn primary" type="submit">' . ht('Simpan warna') . '</button></div></form>'
+
+        . '<section class="card" id="ui-brand"><div><h2>' . ht('Logo') . '</h2>'
+        . '<p class="muted">' . ht('Gambar: PNG, JPG, WEBP, atau GIF, paling besar {0} MB.', kpi_ui_limit_mb()) . '</p></div>'
+        . adm_ui_slot($csrf, 'logo', 'Logo perusahaan', 'Tampil di halaman masuk, di menu aplikasi, di halaman admin, dan di tab browser. Paling bagus gambar persegi dengan latar transparan.',
+            '<img src="assets/logo.png" alt="">', 'logo')
+        . '</section>';
+
+    // Halaman masuk
+    $show = kpi_ui_show_art();
+    $html .= '<section class="card" id="ui-login"><div><h2>' . ht('Halaman masuk') . '</h2>'
+        . '<p class="muted">' . ht('Halaman pertama yang dilihat anggota sebelum masuk.') . '</p></div>'
+        . adm_ui_slot($csrf, 'login_art', 'Gambar ilustrasi', 'Gambar besar di sisi kiri halaman masuk, menggantikan ilustrasi bawaan. Tidak tampil di layar ponsel.',
+            '<span class="ph">' . ht('Ilustrasi bawaan') . '</span>', 'art')
+        . adm_ui_slot($csrf, 'login_bg', 'Gambar latar', 'Foto atau gambar di belakang halaman masuk. Sisi kiri diberi lapisan warna template supaya tulisan tetap terbaca.',
+            '<img src="' . h(kpi_ui_swatch_svg('login')) . '" alt="">', 'bg')
+        . '<form class="form sub-form" method="post" action="' . ADM_SELF . '">' . adm_csrf_field($csrf)
+        . '<input type="hidden" name="_act" value="ui_login_save">' . $back
+        . '<label class="check"><input type="checkbox" name="show_art" value="1"' . ($show ? ' checked' : '') . '>'
+        . '<span><b>' . ht('Tampilkan gambar ilustrasi') . '</b><small>' . ht('Hilangkan centang bila Anda hanya ingin menampilkan gambar latar.') . '</small></span></label>'
+        . '<div class="actions"><button class="btn primary" type="submit">' . ht('Simpan') . '</button></div></form></section>';
+
+    // Setelah masuk
+    $mode   = kpi_ui_app_bg_mode();
+    $appImg = kpi_ui_image('app_bg');
+    $veils  = ['soft' => kpi_t('Samar (tulisan paling mudah dibaca)'), 'medium' => kpi_t('Sedang'), 'strong' => kpi_t('Jelas')];
+    $html .= '<section class="card" id="ui-app"><div><h2>' . ht('Setelah masuk') . '</h2>'
+        . '<p class="muted">' . ht('Latar di belakang isi aplikasi setelah anggota masuk. Menu dan kartu tetap berwarna polos supaya mudah dibaca.') . '</p></div>'
+        . adm_ui_slot($csrf, 'app_bg', 'Gambar latar aplikasi', 'Setelah diunggah, gambar langsung dipakai sebagai latar. Bisa diganti kembali di pilihan latar di bawah.',
+            '<img src="' . h(kpi_ui_swatch_svg('default')) . '" alt="">', 'bg')
+        . '<form class="form sub-form" method="post" action="' . ADM_SELF . '">' . adm_csrf_field($csrf)
+        . '<input type="hidden" name="_act" value="ui_app_save">' . $back
+        . '<fieldset><legend>' . ht('Pilihan latar') . '</legend><div class="themes">'
+        . adm_ui_choice('bg_mode', 'default', $mode === 'default', kpi_ui_swatch_svg('default'), ht('Bawaan'), ht('Abu-abu muda polos'))
+        . adm_ui_choice('bg_mode', 'tint', $mode === 'tint', kpi_ui_swatch_svg('tint'), ht('Warna template'), ht('Abu-abu muda dengan sentuhan warna template'))
+        . adm_ui_choice('bg_mode', 'image', $mode === 'image', $appImg ?? kpi_ui_swatch_svg('default'), ht('Gambar latar'),
+            $appImg !== null ? ht('Gambar yang diunggah di atas') : ht('Unggah gambar dulu'))
+        . '</div></fieldset>'
+        . '<div class="grid2">' . adm_select(kpi_t('Kejelasan gambar latar'), 'veil', $veils, kpi_ui_veil(),
+            kpi_t('Hanya untuk pilihan Gambar latar. Makin jelas gambarnya, makin sulit tulisan di atasnya dibaca.')) . '</div>'
+        . '<div class="actions"><button class="btn primary" type="submit">' . ht('Simpan latar') . '</button></div></form></section>';
+
+    return $html;
 }
 
 function adm_view_admins(array $ctx): string

@@ -39,6 +39,7 @@ const KPI_ADMIN_PAGES = [
         'ringkasan'  => 'Ringkasan',
         'anggota'    => 'Anggota',
         'pengaturan' => 'Pengaturan aplikasi',
+        'tampilan'   => 'Tampilan',
         'admin'      => 'Akun admin',
         'aktivitas'  => 'Catatan aktivitas',
         'akun'       => 'Akun saya',
@@ -483,6 +484,12 @@ function kpi_infra_checks(): array
         $c[] = [kpi_t('Izin file {0}', 'config.php'), $perm !== false ? substr(sprintf('%o', $perm), -3) : '?', $world ? 'warn' : 'ok',
             $world ? kpi_t('Ubah izin menjadi 640 supaya tidak terbaca pengguna lain di server.') : ''];
     }
+
+    // Gambar dari menu Tampilan sysAdmin disimpan di folder uploads.
+    $up = KPI_ROOT . '/uploads';
+    $ok = is_dir($up) && is_writable($up);
+    $c[] = [kpi_t('Folder {0}', 'uploads'), $ok ? kpi_t('Bisa ditulis') : kpi_t('Tidak bisa ditulis'), $ok ? 'ok' : 'warn',
+        $ok ? '' : kpi_t('sysAdmin tidak bisa mengunggah logo dan gambar di menu Tampilan. Ubah izin folder ini menjadi 755.')];
 
     $demo = kpi_setting('demo_mode', '0') === '1';
     $c[] = [kpi_t('Mode demo'), $demo ? kpi_t('Aktif') : kpi_t('Mati'), $demo && !$local ? 'warn' : 'info',

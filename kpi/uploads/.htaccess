@@ -1,0 +1,10 @@
+# Folder gambar dari menu Tampilan sysAdmin. Hanya gambar yang boleh dibuka dari sini.
+Options -Indexes
+
+<FilesMatch "\.(?i:php[0-9]?|phtml|phar|pht|cgi|pl|py|sh|html?|svg|js|htaccess)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>

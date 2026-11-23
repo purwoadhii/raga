@@ -85,7 +85,9 @@ async function main() {
   const shownHost = HOST === '0.0.0.0' ? 'localhost' : HOST === '127.0.0.1' ? 'localhost' : HOST;
   const url = `http://${shownHost}:${port}/`;
 
-  const server = spawn(php.bin, ['-S', `${HOST}:${port}`, '-t', APP_DIR, path.join(__dirname, 'router.php')], {
+  // Batas unggahan gambar (menu Tampilan sysAdmin) dibuat cukup longgar untuk gambar 5 MB.
+  const ini = ['-d', 'upload_max_filesize=8M', '-d', 'post_max_size=12M'];
+  const server = spawn(php.bin, [...ini, '-S', `${HOST}:${port}`, '-t', APP_DIR, path.join(__dirname, 'router.php')], {
     stdio: ['ignore', 'ignore', 'pipe'],
     windowsHide: true,
   });
