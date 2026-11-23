@@ -70,6 +70,20 @@ function adm_level(string $level): string
     return isset(ADM_LEVEL_NAMES[$level]) ? kpi_t(ADM_LEVEL_NAMES[$level]) : $level;
 }
 
+/** Submenu Anggota: daftar anggota menurut status akun (?p=anggota&status=...). */
+const ADM_MEMBER_STATUS = ['aktif' => 'Aktif', 'nonaktif' => 'Tidak aktif'];
+
+function adm_member_status($value): string
+{
+    return is_string($value) && isset(ADM_MEMBER_STATUS[$value]) ? $value : '';
+}
+
+/** Alamat daftar anggota, dengan submenu status bila ada. */
+function adm_members_url(string $status, string $extra = ''): string
+{
+    return ADM_SELF . '?p=anggota' . ($status !== '' ? '&amp;status=' . $status : '') . $extra;
+}
+
 /** Penjelasan singkat setiap role anggota (lihat KPI_ROLES di auth.php). */
 const ADM_ROLE_HINTS = [
     'anggota'   => 'Melihat dan mengisi KPI sendiri serta tim di bawahnya, dan menyetujui realisasi bawahan langsung.',
@@ -194,11 +208,28 @@ function adm_page_guest(string $body, ?array $flash, bool $wide): string
 
 function adm_page(array $admin, string $panel, array $pages, string $page, string $body, ?array $flash, string $csrf): string
 {
-    $role  = $admin['role'];
-    $title = kpi_t($pages[$page]);
-    $nav   = '';
+    $role   = $admin['role'];
+    $title  = kpi_t($pages[$page]);
+    $status = $page === 'anggota' ? adm_member_status($_GET['status'] ?? '') : '';
+    if ($status !== '') {
+        $title = $status === 'aktif' ? kpi_t('Anggota aktif') : kpi_t('Anggota tidak aktif');
+    }
+    $nav = '';
     foreach ($pages as $key => $label) {
-        $nav .= '<a href="' . ADM_SELF . '?p=' . h($key) . '"' . ($key === $page ? ' class="on" aria-current="page"' : '') . '>' . ht($label) . '</a>';
+        $on   = $key === $page && $status === '';
+        $nav .= '<a href="' . ADM_SELF . '?p=' . h($key) . '"' . ($on ? ' class="on" aria-current="page"' : ($key === $page ? ' class="open"' : '')) . '>' . ht($label) . '</a>';
+        if ($key === 'anggota') {
+            // Submenu: anggota aktif dan tidak aktif, dengan jumlahnya.
+            $count = ['aktif' => 0, 'nonaktif' => 0];
+            foreach (kpi_all_users() as $u) {
+                $count[$u['is_active'] ? 'aktif' : 'nonaktif']++;
+            }
+            foreach (ADM_MEMBER_STATUS as $sk => $sl) {
+                $sOn  = $page === 'anggota' && $status === $sk;
+                $nav .= '<a class="sub' . ($sOn ? ' on' : '') . '" href="' . adm_members_url($sk) . '"' . ($sOn ? ' aria-current="page"' : '') . '>'
+                    . '<span>' . ht($sl) . '</span><span class="count num">' . kpi_num($count[$sk]) . '</span></a>';
+            }
+        }
     }
     $maint = kpi_setting('maintenance', '0') === '1'
         ? '<div class="flash warn">' . ht('Mode pemeliharaan sedang aktif. Aplikasi KPI ditutup sementara untuk semua anggota.') . '</div>'
@@ -381,14 +412,18 @@ function adm_view_users(array $ctx): string
         return adm_user_form($ctx, $users, $users[(int)$get['edit']]);
     }
 
-    $q    = mb_strtolower(trim((string)($get['q'] ?? '')));
-    $rows = '';
-    $n    = 0;
+    $q      = mb_strtolower(trim((string)($get['q'] ?? '')));
+    $status = adm_member_status($get['status'] ?? '');
+    $rows   = '';
+    $n      = 0;
     $order = array_flip(array_keys(ADM_LEVEL_NAMES));
     uasort($users, fn($a, $b) => [$order[$a['level']] ?? 9, $a['dept'], $a['name']] <=> [$order[$b['level']] ?? 9, $b['dept'], $b['name']]);
     foreach ($users as $u) {
         $hay = $u['name'] . ' ' . $u['username'] . ' ' . $u['dept'] . ' ' . $u['title'] . ' ' . KPI_ROLES[kpi_role($u)] . ' ' . kpi_t(KPI_ROLES[kpi_role($u)]);
         if ($q !== '' && mb_strpos(mb_strtolower($hay), $q) === false) {
+            continue;
+        }
+        if ($status !== '' && (bool)$u['is_active'] !== ($status === 'aktif')) {
             continue;
         }
         $n++;
@@ -399,16 +434,27 @@ function adm_view_users(array $ctx): string
             . '<td>' . h($u['dept']) . '</td><td>' . h($boss) . '</td>'
             . '<td><code>' . h($u['username']) . '</code></td>'
             . '<td>' . adm_status_pill((bool)$u['is_active']) . '</td>'
-            . '<td class="right"><a class="btn" href="' . ADM_SELF . '?p=anggota&amp;edit=' . (int)$u['id'] . '">' . ht('Ubah') . '</a></td></tr>';
+            . '<td class="right"><a class="btn" href="' . adm_members_url($status, '&amp;edit=' . (int)$u['id']) . '">' . ht('Ubah') . '</a></td></tr>';
     }
 
-    $html = '<div class="toolbar"><form method="get" action="' . ADM_SELF . '" class="search"><input type="hidden" name="p" value="anggota">'
+    if ($q !== '') {
+        $empty = kpi_t('Tidak ada anggota yang cocok.');
+    } elseif ($status === 'nonaktif') {
+        $empty = kpi_t('Tidak ada anggota yang tidak aktif. Semua akun anggota bisa masuk.');
+    } else {
+        $empty = kpi_t('Tidak ada anggota yang aktif.');
+    }
+    $html = ($status === 'nonaktif'
+            ? '<p class="muted">' . ht('Anggota tidak aktif tidak bisa masuk ke aplikasi, tetapi data dan KPI-nya tetap tersimpan. Klik Ubah untuk mengaktifkannya kembali.') . '</p>'
+            : ($status === 'aktif' ? '<p class="muted">' . ht('Anggota yang bisa masuk ke aplikasi KPI.') . '</p>' : ''))
+        . '<div class="toolbar"><form method="get" action="' . ADM_SELF . '" class="search"><input type="hidden" name="p" value="anggota">'
+        . ($status !== '' ? '<input type="hidden" name="status" value="' . h($status) . '">' : '')
         . '<input type="search" name="q" value="' . h($get['q'] ?? '') . '" placeholder="' . ht('Cari nama, username, unit, atau role') . '" aria-label="' . ht('Cari anggota') . '">'
         . '<button class="btn" type="submit">' . ht('Cari') . '</button></form>'
         . '<a class="btn primary" href="' . ADM_SELF . '?p=anggota&amp;new=1">' . ht('Tambah anggota') . '</a></div>'
         . '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>' . ht('Nama') . '</th><th>' . ht('Level') . '</th><th>' . ht('Role') . '</th><th>' . ht('Unit') . '</th>'
         . '<th>' . ht('Atasan') . '</th><th>' . ht('Username') . '</th><th>' . ht('Status') . '</th><th></th></tr></thead><tbody>'
-        . ($rows ?: '<tr><td colspan="8" class="muted">' . ht('Tidak ada anggota yang cocok.') . '</td></tr>')
+        . ($rows ?: '<tr><td colspan="8" class="muted">' . h($empty) . '</td></tr>')
         . '</tbody></table></div><p class="muted small foot">' . ht('{0} anggota ditampilkan.', kpi_num($n)) . '</p></section>';
 
     $locked = kpi_locked_list();
@@ -432,8 +478,11 @@ function adm_user_form(array $ctx, array $users, ?array $u): string
 {
     $csrf = $ctx['csrf'];
     $old  = $ctx['old'];
-    $val  = fn(string $k, $def = '') => $old[$k] ?? $def;
-    $back = adm_back_link(ADM_SELF . '?p=anggota', 'Kembali ke daftar anggota');
+    $val    = fn(string $k, $def = '') => $old[$k] ?? $def;
+    $status = adm_member_status($ctx['get']['status'] ?? '');
+    $list   = adm_members_url($status);
+    $back   = '<p><a class="back" href="' . $list . '"><span class="arr" aria-hidden="true">&larr;</span> ' . ht('Kembali ke daftar anggota') . '</a></p>';
+    $keep   = $status !== '' ? '<input type="hidden" name="_status" value="' . h($status) . '">' : '';
 
     // Pilihan atasan: untuk anggota baru semua yang bukan Staff, untuk yang lama hanya yang selevel dengan atasannya sekarang.
     $parents = [];
@@ -453,7 +502,7 @@ function adm_user_form(array $ctx, array $users, ?array $u): string
     }
 
     $form = '<form class="card form" method="post" action="' . ADM_SELF . '" autocomplete="off">' . adm_csrf_field($csrf)
-        . '<input type="hidden" name="_act" value="user_save"><input type="hidden" name="_back" value="anggota">'
+        . '<input type="hidden" name="_act" value="user_save"><input type="hidden" name="_back" value="anggota">' . $keep
         . ($u ? '<input type="hidden" name="id" value="' . (int)$u['id'] . '"><input type="hidden" name="_edit" value="' . (int)$u['id'] . '">'
               : '<input type="hidden" name="_new" value="1">')
         . '<h2>' . ($u ? ht('Ubah data {0}', $u['name']) : ht('Tambah anggota')) . '</h2>'
@@ -471,7 +520,7 @@ function adm_user_form(array $ctx, array $users, ?array $u): string
                 'hint' => $u ? kpi_t('Kosongkan bila tidak ingin mengganti password.') : kpi_t('Minimal {0} karakter.', 4)])
         . '</div>' . adm_role_field($u, (string)$val('role', $u ? kpi_role($u) : 'anggota'))
         . '<div class="actions"><button class="btn primary" type="submit">' . ht('Simpan') . '</button>'
-        . '<a class="btn" href="' . ADM_SELF . '?p=anggota">' . ht('Batal') . '</a></div></form>';
+        . '<a class="btn" href="' . $list . '">' . ht('Batal') . '</a></div></form>';
 
     if (!$u) {
         return $back . $form;
@@ -481,11 +530,11 @@ function adm_user_form(array $ctx, array $users, ?array $u): string
     $side = '<section class="card"><h2>' . ht('Status akun') . '</h2>';
     if ($u['is_active']) {
         $side .= '<p class="muted">' . ht('Akun ini aktif. Bila dinonaktifkan, orangnya tidak bisa masuk, tetapi data dan KPI-nya tetap tersimpan.') . '</p>'
-            . adm_confirm($csrf, kpi_t('Nonaktifkan akun'), kpi_t('Nonaktifkan akun {0}?', $u['name']), 'user_toggle', ['id' => $id, 'active' => '0'], kpi_t('Ya, nonaktifkan'), 'warn');
+            . adm_confirm($csrf, kpi_t('Nonaktifkan akun'), kpi_t('Nonaktifkan akun {0}?', $u['name']), 'user_toggle', ['id' => $id, 'active' => '0', '_status' => $status], kpi_t('Ya, nonaktifkan'), 'warn');
     } else {
         $side .= '<p class="muted">' . ht('Akun ini nonaktif dan tidak bisa masuk.') . '</p>'
             . '<form method="post" action="' . ADM_SELF . '">' . adm_csrf_field($csrf)
-            . '<input type="hidden" name="_act" value="user_toggle"><input type="hidden" name="id" value="' . $id . '"><input type="hidden" name="active" value="1">'
+            . '<input type="hidden" name="_act" value="user_toggle"><input type="hidden" name="id" value="' . $id . '"><input type="hidden" name="active" value="1">' . $keep
             . '<button class="btn primary" type="submit">' . ht('Aktifkan kembali') . '</button></form>';
     }
     $side .= '</section>';
@@ -494,7 +543,7 @@ function adm_user_form(array $ctx, array $users, ?array $u): string
         $side .= '<section class="card"><h2>' . ht('Hapus anggota') . '</h2>'
             . '<p class="muted">' . ht('Menghapus anggota juga menghapus seluruh KPI dan realisasinya, dan tidak bisa dibatalkan. Anggota yang masih punya bawahan tidak bisa dihapus.') . '</p>'
             . adm_confirm($csrf, kpi_t('Hapus anggota'), kpi_t('Hapus {0} beserta seluruh KPI dan realisasinya?', $u['name']), 'user_delete',
-                ['id' => $id, '_back' => 'anggota', '_edit' => $id], kpi_t('Ya, hapus permanen'))
+                ['id' => $id, '_back' => 'anggota', '_edit' => $id, '_status' => $status], kpi_t('Ya, hapus permanen'))
             . '</section>';
     }
     return $back . $form . $side;
