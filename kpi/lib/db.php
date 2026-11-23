@@ -83,6 +83,30 @@ function kpi_set_setting(string $key, $value): void
     kpi_settings(true);
 }
 
+/**
+ * Perubahan tabel untuk pemasangan lama, dijalankan sekali saat halaman dibuka.
+ * Versi skema disimpan di settings (schema_version).
+ *   2: kolom users.role (role anggota yang diatur sysAdmin).
+ */
+function kpi_migrate(): void
+{
+    if ((int)kpi_setting('schema_version', '1') >= 2) {
+        return;
+    }
+    $db = db();
+    if (!$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch()) {
+        try {
+            $db->exec("ALTER TABLE users ADD COLUMN role VARCHAR(12) NOT NULL DEFAULT 'anggota' AFTER level");
+        } catch (Throwable $e) {
+            // Permintaan lain mungkin sudah menambahkannya pada saat yang sama.
+            if (!$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch()) {
+                throw $e;
+            }
+        }
+    }
+    kpi_set_setting('schema_version', '2');
+}
+
 /** Pesan pemeliharaan bila aplikasi sedang ditutup sementara, selain itu null. */
 function kpi_maintenance_message(): ?string
 {

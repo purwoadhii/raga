@@ -30,7 +30,7 @@ Semua akun admin yang aktif bisa masuk ke kedua halaman, apa pun perannya. Isi m
 
 | Halaman | Menu |
 | --- | --- |
-| **sysAdmin** | Ringkasan, Anggota (tambah, ubah, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Tampilan, Akun admin, Catatan aktivitas |
+| **sysAdmin** | Ringkasan, Anggota (tambah, ubah, atur role, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Tampilan, Akun admin, Catatan aktivitas |
 | **infraAdmin** | Status server (PHP, database, HTTPS, izin file, ruang disk), Cadangan database (.sql), Mode pemeliharaan, Catatan aktivitas dan pembersihannya |
 
 **Akun admin bawaan.** Saat aplikasi disiapkan, dua akun dibuat otomatis:
@@ -129,7 +129,7 @@ Sebelum dipakai sungguhan, ganti semua password dan matikan tampilan akun contoh
 
 ## Hak akses
 
-| Peran | Yang bisa dilakukan |
+| Level | Yang bisa dilakukan |
 | --- | --- |
 | Staff | Melihat dan mengisi KPI sendiri, melihat struktur organisasi |
 | Unit Head | Semua di atas, ditambah menetapkan KPI staf dan menyetujui realisasi staf |
@@ -137,6 +137,22 @@ Sebelum dipakai sungguhan, ganti semua password dan matikan tampilan akun contoh
 | CEO | Semua data, menambah dan menghapus anggota, serta mengubah pengaturan |
 
 Skor hanya terlihat untuk diri sendiri dan bawahan. Pemeriksaan hak akses dilakukan di server, bukan hanya di tampilan.
+
+### Role anggota
+
+Selain level, setiap anggota punya **role** yang diatur sysAdmin di menu **Anggota** (buka anggota, pilih role, lalu Simpan). Role menambah hak di luar tim sendiri. Level tetap mengikuti atasan.
+
+| Role | Yang bisa dilakukan |
+| --- | --- |
+| Anggota biasa (bawaan) | Sesuai levelnya seperti tabel di atas |
+| Pemantau | Ditambah melihat KPI, skor, pohon KPI, dan laporan semua anggota di seluruh perusahaan, tanpa bisa mengubahnya. Cocok untuk HR atau auditor |
+| Pengelola KPI | Seperti CEO: melihat semua anggota, menetapkan dan mengubah KPI siapa pun, menambah dan mengubah anggota di Struktur Organisasi, dan mengubah pengaturan perusahaan. Data akun CEO tetap hanya bisa diubah CEO sendiri |
+
+- CEO selalu punya semua hak, jadi tidak diberi role.
+- Persetujuan realisasi tetap oleh atasan langsung, apa pun role-nya. Realisasi yang langsung tercatat disetujui tetap hanya milik CEO.
+- Role hanya bisa diubah di `/sysAdmin`, tidak dari dalam aplikasi.
+- Pemantau dan Pengelola KPI yang punya tim bisa memilih cakupan **Tim saya** atau **Seluruh perusahaan** di halaman Tim, Pohon KPI, dan Laporan.
+- Pemasangan lama otomatis mendapat kolom role saat halaman pertama kali dibuka setelah pembaruan. Semua anggota mulai sebagai Anggota biasa.
 
 ## Keamanan
 

@@ -70,6 +70,23 @@ function adm_level(string $level): string
     return isset(ADM_LEVEL_NAMES[$level]) ? kpi_t(ADM_LEVEL_NAMES[$level]) : $level;
 }
 
+/** Penjelasan singkat setiap role anggota (lihat KPI_ROLES di auth.php). */
+const ADM_ROLE_HINTS = [
+    'anggota'   => 'Melihat dan mengisi KPI sendiri serta tim di bawahnya, dan menyetujui realisasi bawahan langsung.',
+    'pemantau'  => 'Seperti anggota biasa, ditambah bisa melihat KPI dan skor semua anggota di seluruh perusahaan tanpa bisa mengubahnya. Cocok untuk HR atau auditor.',
+    'pengelola' => 'Seperti CEO: bisa melihat semua anggota, menetapkan dan mengubah KPI siapa pun, mengatur struktur organisasi, dan mengubah pengaturan aplikasi.',
+];
+
+/** Label role di daftar anggota. CEO selalu punya semua hak. */
+function adm_role_pill(array $u): string
+{
+    if ($u['level'] === 'ceo') {
+        return adm_pill(kpi_t('Semua hak (CEO)'), 'sys');
+    }
+    $r = kpi_role($u);
+    return adm_pill(kpi_t(KPI_ROLES[$r]), ['anggota' => '', 'pemantau' => 'infra', 'pengelola' => 'sys'][$r]);
+}
+
 /** Panah "kembali" yang ikut berbalik arah pada tulisan kanan-ke-kiri. */
 function adm_back_link(string $href, string $text): string
 {
@@ -370,13 +387,15 @@ function adm_view_users(array $ctx): string
     $order = array_flip(array_keys(ADM_LEVEL_NAMES));
     uasort($users, fn($a, $b) => [$order[$a['level']] ?? 9, $a['dept'], $a['name']] <=> [$order[$b['level']] ?? 9, $b['dept'], $b['name']]);
     foreach ($users as $u) {
-        if ($q !== '' && mb_strpos(mb_strtolower($u['name'] . ' ' . $u['username'] . ' ' . $u['dept'] . ' ' . $u['title']), $q) === false) {
+        $hay = $u['name'] . ' ' . $u['username'] . ' ' . $u['dept'] . ' ' . $u['title'] . ' ' . KPI_ROLES[kpi_role($u)] . ' ' . kpi_t(KPI_ROLES[kpi_role($u)]);
+        if ($q !== '' && mb_strpos(mb_strtolower($hay), $q) === false) {
             continue;
         }
         $n++;
         $boss = $u['parent_id'] !== null && isset($users[(int)$u['parent_id']]) ? $users[(int)$u['parent_id']]['name'] : '-';
         $rows .= '<tr><td><b>' . h($u['name']) . '</b><div class="muted small">' . h($u['title']) . '</div></td>'
             . '<td>' . h(adm_level($u['level'])) . '</td>'
+            . '<td>' . adm_role_pill($u) . '</td>'
             . '<td>' . h($u['dept']) . '</td><td>' . h($boss) . '</td>'
             . '<td><code>' . h($u['username']) . '</code></td>'
             . '<td>' . adm_status_pill((bool)$u['is_active']) . '</td>'
@@ -384,12 +403,12 @@ function adm_view_users(array $ctx): string
     }
 
     $html = '<div class="toolbar"><form method="get" action="' . ADM_SELF . '" class="search"><input type="hidden" name="p" value="anggota">'
-        . '<input type="search" name="q" value="' . h($get['q'] ?? '') . '" placeholder="' . ht('Cari nama, username, atau unit') . '" aria-label="' . ht('Cari anggota') . '">'
+        . '<input type="search" name="q" value="' . h($get['q'] ?? '') . '" placeholder="' . ht('Cari nama, username, unit, atau role') . '" aria-label="' . ht('Cari anggota') . '">'
         . '<button class="btn" type="submit">' . ht('Cari') . '</button></form>'
         . '<a class="btn primary" href="' . ADM_SELF . '?p=anggota&amp;new=1">' . ht('Tambah anggota') . '</a></div>'
-        . '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>' . ht('Nama') . '</th><th>' . ht('Level') . '</th><th>' . ht('Unit') . '</th>'
+        . '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>' . ht('Nama') . '</th><th>' . ht('Level') . '</th><th>' . ht('Role') . '</th><th>' . ht('Unit') . '</th>'
         . '<th>' . ht('Atasan') . '</th><th>' . ht('Username') . '</th><th>' . ht('Status') . '</th><th></th></tr></thead><tbody>'
-        . ($rows ?: '<tr><td colspan="7" class="muted">' . ht('Tidak ada anggota yang cocok.') . '</td></tr>')
+        . ($rows ?: '<tr><td colspan="8" class="muted">' . ht('Tidak ada anggota yang cocok.') . '</td></tr>')
         . '</tbody></table></div><p class="muted small foot">' . ht('{0} anggota ditampilkan.', kpi_num($n)) . '</p></section>';
 
     $locked = kpi_locked_list();
@@ -450,7 +469,8 @@ function adm_user_form(array $ctx, array $users, ?array $u): string
                 'hint' => $u ? '' : kpi_t('Bila kosong, dibuat dari nama. Contoh: siti.rahma')])
         . adm_input($u ? kpi_t('Password baru') : kpi_t('Password'), 'password', '', ['type' => 'password', 'minlength' => 4, 'required' => !$u,
                 'hint' => $u ? kpi_t('Kosongkan bila tidak ingin mengganti password.') : kpi_t('Minimal {0} karakter.', 4)])
-        . '</div><div class="actions"><button class="btn primary" type="submit">' . ht('Simpan') . '</button>'
+        . '</div>' . adm_role_field($u, (string)$val('role', $u ? kpi_role($u) : 'anggota'))
+        . '<div class="actions"><button class="btn primary" type="submit">' . ht('Simpan') . '</button>'
         . '<a class="btn" href="' . ADM_SELF . '?p=anggota">' . ht('Batal') . '</a></div></form>';
 
     if (!$u) {
@@ -478,6 +498,25 @@ function adm_user_form(array $ctx, array $users, ?array $u): string
             . '</section>';
     }
     return $back . $form . $side;
+}
+
+/** Pilihan role di formulir anggota. CEO tidak bisa dipilihkan role karena sudah punya semua hak. */
+function adm_role_field(?array $u, string $cur): string
+{
+    if ($u && $u['level'] === 'ceo') {
+        return '<fieldset><legend>' . ht('Role') . '</legend><p class="muted">'
+            . ht('CEO selalu bisa melihat dan mengatur semua KPI, anggota, dan pengaturan aplikasi, jadi tidak perlu diberi role.') . '</p></fieldset>';
+    }
+    if (!isset(KPI_ROLES[$cur])) {
+        $cur = 'anggota';
+    }
+    $html = '<fieldset><legend>' . ht('Role') . '</legend>'
+        . '<p class="muted small">' . ht('Role menentukan apa saja yang bisa dilihat dan diubah orang ini di aplikasi, di luar timnya sendiri. Level tetap mengikuti atasannya.') . '</p>';
+    foreach (KPI_ROLES as $key => $label) {
+        $html .= '<label class="check"><input type="radio" name="role" value="' . h($key) . '"' . ($key === $cur ? ' checked' : '') . '>'
+            . '<span><b>' . ht($label) . '</b><small>' . ht(ADM_ROLE_HINTS[$key]) . '</small></span></label>';
+    }
+    return $html . '</fieldset>';
 }
 
 function adm_view_settings(array $ctx): string
