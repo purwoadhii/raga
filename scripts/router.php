@@ -17,6 +17,14 @@ if (preg_match('#^/+lib(/|$)#i', $path)
     return true;
 }
 
+// Folder uploads hanya berisi gambar dari menu Tampilan sysAdmin.
+if (preg_match('#^/+uploads(/|$)#i', $path) && !preg_match('#^/+uploads/[a-z-]+-[0-9a-f]{12}\.(png|jpg|webp|gif)$#', $path)) {
+    http_response_code(404);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'Tidak ditemukan.';
+    return true;
+}
+
 // Alamat pendek halaman admin: /sysAdmin dan /infraAdmin (huruf besar kecil bebas, boleh diakhiri garis miring).
 $short = ['sysadmin' => 'sysadmin.php', 'infraadmin' => 'infraadmin.php'];
 if (preg_match('#^/+(sysadmin|infraadmin)/*$#i', $path, $m)) {

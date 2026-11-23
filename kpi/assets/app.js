@@ -46,6 +46,9 @@ const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},se
 /* ===== State ===== */
 let S=null, cache=new Map();
 const BOOT=window.__BOOT__||{};
+/** Tampilan yang diatur sysAdmin di menu Tampilan: logo dan gambar halaman masuk. */
+const UI=Object.assign({logo:'assets/logo.png',logoOwn:false,art:null,showArt:true},BOOT.ui||{});
+const logoImg=(cls,size,alt)=>`<img class="${cls}${UI.logoOwn?' own':''}" src="${esc(UI.logo)}" alt="${alt}"${size?` width="${size}" height="${size}"`:''}>`;
 let P={page:'home',month:new Date().getMonth(),view:null,lang:'id',rlv:'all'};
 function loadPref(){try{const p=JSON.parse(store.get(PREF)||'null');if(p){delete p.lang;Object.assign(P,p)}}catch(e){}}
 function savePref(){store.set(PREF,JSON.stringify({page:P.page,month:P.month,view:P.view,rlv:P.rlv}))}
@@ -211,11 +214,11 @@ function heroArt(){
 function viewLogin(){
   const demo=(BOOT.demoMode&&Array.isArray(BOOT.demoAccounts))?BOOT.demoAccounts:[];
   return `<div class="login">
-  <section class="lg-hero">${heroArt()}<h2>${t('h')}</h2><p>${t('p')}</p></section>
+  <section class="lg-hero">${!UI.showArt?'':UI.art?`<img class="lg-art" src="${esc(UI.art)}" alt="">`:heroArt()}<h2>${t('h')}</h2><p>${t('p')}</p></section>
   <section class="login-side"><div class="lg-card">
     ${langPicker('lg-lang')}
     <form class="lg-form" id="lg-form" autocomplete="off" novalidate>
-      <div class="lg-brand"><img src="assets/logo.png" alt="Logo" width="58" height="58"><span>Key Performance Indicator</span></div>
+      <div class="lg-brand">${logoImg('lg-logo',58,'Logo')}<span>Key Performance Indicator</span></div>
       <h1>${t('welcome')}</h1><p class="sub">${t('sub')}</p>
       <div class="lg-field"><label for="lg-user">${t('user')}</label><div class="lg-in">${ico('user')}<input id="lg-user" type="text" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="${t('userPh')}"></div></div>
       <div class="lg-field"><label for="lg-pin">${t('pass')}</label><div class="lg-in">${ico('lock')}<input id="lg-pin" type="password" autocomplete="off" placeholder="${t('passPh')}"><button type="button" data-act="eye" aria-label="${t('show')}">${ico('eye')}</button></div></div>
@@ -233,7 +236,7 @@ function navItems(u){const hasTeam=childrenUsers(u.id).length>0;const pend=pendi
   return [['home',tx('Beranda')],['mine',tx('KPI Saya')],hasTeam&&['team',tx('Tim Saya')],['tree',tx('Pohon KPI')],['org',tx('Struktur Organisasi')],hasTeam&&['approve',tx('Persetujuan'),pend],hasTeam&&['report',tx('Laporan')],['settings',tx('Pengaturan')]].filter(Boolean)}
 function shell(pg){const u=me();
   return `<div class="app"><aside class="side">
-    <div class="brand"><img class="logo-img" src="assets/logo.png" alt=""><div style="min-width:0"><b>Key Performance Indicator</b><span>${esc(S.company)}</span></div><button class="btn sm ghost out" data-act="logout" aria-label="${tx('Keluar')}">${ico('out')}</button></div>
+    <div class="brand">${logoImg('logo-img',0,'')}<div style="min-width:0"><b>Key Performance Indicator</b><span>${esc(S.company)}</span></div><button class="btn sm ghost out" data-act="logout" aria-label="${tx('Keluar')}">${ico('out')}</button></div>
     <nav class="nav">${navItems(u).map(([k,l,b])=>`<button class="${P.page===k||(k==='team'&&P.page==='person')?'on':''}" data-act="go" data-page="${k}">${ico(k)}<span>${l}</span>${b?`<span class="badge">${b}</span>`:''}</button>`).join('')}</nav>
     <div class="me-box">${av(u)}<div class="who"><b>${esc(u.name)}</b><span>${lvlLabel(u)}</span></div><button class="btn sm ghost" data-act="logout" title="${tx('Keluar')}" aria-label="${tx('Keluar')}">${ico('out')}</button></div>
   </aside><main class="main">

@@ -17,6 +17,7 @@ require __DIR__ . '/lib/schema.php';
 require __DIR__ . '/lib/handlers.php';
 require __DIR__ . '/lib/auth.php';
 require __DIR__ . '/lib/admin.php';
+require __DIR__ . '/lib/ui.php';
 require __DIR__ . '/lib/admin_views.php';
 
 /**
@@ -114,6 +115,11 @@ try {
     /* ================= Tindakan (POST) ================= */
     if ($method === 'POST') {
         $act = (string)($_POST['_act'] ?? '');
+        // Unggahan yang melebihi post_max_size sampai tanpa isi sama sekali (juga tanpa token).
+        if ($_POST === [] && $_FILES === [] && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+            adm_flash('err', kpi_t('Gambar terlalu besar. Ukuran paling besar {0} MB.', kpi_ui_limit_mb()));
+            adm_go($admin && $panel === 'sysadmin' ? 'p=tampilan' : '');
+        }
         if (!kpi_admin_check_csrf($_POST['_csrf'] ?? null)) {
             adm_flash('err', kpi_t('Sesi sudah berakhir. Silakan ulangi.'));
             adm_go();
@@ -243,6 +249,79 @@ try {
                     adm_go('p=pengaturan');
                     break;
                 }
+                case 'ui_theme_save': {
+                    $need('sysadmin');
+                    $theme = (string)($_POST['theme'] ?? '');
+                    $color = strtoupper(trim((string)($_POST['color'] ?? '')));
+                    if (!preg_match('/^#[0-9A-F]{6}$/', $color)) {
+                        throw new KpiApiError('Warna tidak valid.');
+                    }
+                    // Warna sendiri yang diubah tanpa memilih "Warna sendiri" tetap dianggap pilihan.
+                    if ($theme !== 'custom' && $color !== strtoupper((string)($_POST['color_was'] ?? ''))) {
+                        $theme = 'custom';
+                    }
+                    if ($theme !== 'custom' && !isset(KPI_UI_THEMES[$theme])) {
+                        throw new KpiApiError('Pilih salah satu warna template.');
+                    }
+                    kpi_set_setting('ui_theme', $theme);
+                    if ($theme === 'custom') {
+                        kpi_set_setting('ui_color', $color);
+                    }
+                    kpi_admin_log($admin, 'tampilan_ubah', 'warna template: ' . ($theme === 'custom' ? $color : $theme));
+                    adm_flash('ok', kpi_t('Warna template sudah disimpan. Muat ulang aplikasi KPI untuk melihat hasilnya.'));
+                    adm_go('p=tampilan');
+                    break;
+                }
+                case 'ui_upload': {
+                    $need('sysadmin');
+                    $slot = (string)($_POST['slot'] ?? '');
+                    kpi_ui_upload($slot, $_FILES['image'] ?? null);
+                    if ($slot === 'app_bg') {
+                        kpi_set_setting('ui_app_bg_mode', 'image'); // gambar latar langsung dipakai
+                    }
+                    kpi_admin_log($admin, 'tampilan_ubah', 'gambar diunggah: ' . $slot);
+                    adm_flash('ok', kpi_t('Gambar sudah dipasang. Muat ulang aplikasi KPI untuk melihat hasilnya.'));
+                    adm_go('p=tampilan#ui-' . $slot);
+                    break;
+                }
+                case 'ui_remove': {
+                    $need('sysadmin');
+                    $slot = (string)($_POST['slot'] ?? '');
+                    kpi_ui_remove($slot);
+                    if ($slot === 'app_bg' && kpi_setting('ui_app_bg_mode', 'default') === 'image') {
+                        kpi_set_setting('ui_app_bg_mode', 'default');
+                    }
+                    kpi_admin_log($admin, 'tampilan_ubah', 'gambar bawaan dipakai lagi: ' . $slot);
+                    adm_flash('ok', kpi_t('Gambar bawaan dipakai kembali.'));
+                    adm_go('p=tampilan#ui-' . $slot);
+                    break;
+                }
+                case 'ui_login_save': {
+                    $need('sysadmin');
+                    $show = !empty($_POST['show_art']);
+                    kpi_set_setting('ui_login_art_show', $show ? '1' : '0');
+                    kpi_admin_log($admin, 'tampilan_ubah', 'ilustrasi halaman masuk: ' . ($show ? 'tampil' : 'disembunyikan'));
+                    adm_flash('ok', kpi_t('Pengaturan halaman masuk sudah disimpan.'));
+                    adm_go('p=tampilan#ui-login');
+                    break;
+                }
+                case 'ui_app_save': {
+                    $need('sysadmin');
+                    $mode = (string)($_POST['bg_mode'] ?? '');
+                    $veil = (string)($_POST['veil'] ?? 'soft');
+                    if (!in_array($mode, KPI_UI_APP_BG_MODES, true) || !isset(KPI_UI_VEILS[$veil])) {
+                        throw new KpiApiError('Pilih salah satu latar.');
+                    }
+                    if ($mode === 'image' && kpi_ui_image('app_bg') === null) {
+                        throw new KpiApiError('Unggah gambar latar aplikasi terlebih dahulu.');
+                    }
+                    kpi_set_setting('ui_app_bg_mode', $mode);
+                    kpi_set_setting('ui_app_bg_veil', $veil);
+                    kpi_admin_log($admin, 'tampilan_ubah', 'latar aplikasi: ' . $mode . ($mode === 'image' ? ', ' . $veil : ''));
+                    adm_flash('ok', kpi_t('Latar aplikasi sudah disimpan.'));
+                    adm_go('p=tampilan#ui-app');
+                    break;
+                }
                 case 'admin_save': {
                     $need('sysadmin');
                     $id = kpi_admin_save([
@@ -352,6 +431,7 @@ try {
         case 'ringkasan':    $body = adm_view_overview($ctx); break;
         case 'anggota':      $body = adm_view_users($ctx); break;
         case 'pengaturan':   $body = adm_view_settings($ctx); break;
+        case 'tampilan':     $body = adm_view_appearance($ctx); break;
         case 'admin':        $body = adm_view_admins($ctx); break;
         case 'status':       $body = adm_view_status($ctx); break;
         case 'cadangan':     $body = adm_view_backup($ctx); break;

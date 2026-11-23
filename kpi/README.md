@@ -30,7 +30,7 @@ Semua akun admin yang aktif bisa masuk ke kedua halaman, apa pun perannya. Isi m
 
 | Halaman | Menu |
 | --- | --- |
-| **sysAdmin** | Ringkasan, Anggota (tambah, ubah, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Akun admin, Catatan aktivitas |
+| **sysAdmin** | Ringkasan, Anggota (tambah, ubah, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Tampilan, Akun admin, Catatan aktivitas |
 | **infraAdmin** | Status server (PHP, database, HTTPS, izin file, ruang disk), Cadangan database (.sql), Mode pemeliharaan, Catatan aktivitas dan pembersihannya |
 
 **Akun admin bawaan.** Saat aplikasi disiapkan, dua akun dibuat otomatis:
@@ -53,6 +53,21 @@ Aturan pengaman:
 - Harus selalu ada minimal satu sysAdmin aktif. Akun CEO tidak bisa dihapus, dan CEO satu-satunya tidak bisa dinonaktifkan.
 - Saat mode pemeliharaan aktif, aplikasi menampilkan halaman pemberitahuan dan tidak ada yang bisa masuk, tetapi halaman admin tetap bisa dibuka.
 - Semua tindakan admin tercatat di Catatan aktivitas.
+
+### Menu Tampilan (sysAdmin)
+
+Menu **Tampilan** di `/sysAdmin` mengatur tampilan aplikasi KPI untuk semua anggota. Perubahan berlaku saat halaman aplikasi dimuat ulang.
+
+| Bagian | Isi |
+| --- | --- |
+| Warna template | Delapan warna siap pakai (Biru navy bawaan, Biru cerah, Toska, Hijau, Merah marun, Ungu, Oranye, Abu-abu grafit) atau warna sendiri. Mengubah warna tombol, menu, tautan, dan panel halaman masuk, termasuk di tampilan gelap |
+| Logo | Logo perusahaan di halaman masuk, menu aplikasi, halaman admin, dan tab browser |
+| Halaman masuk | Gambar ilustrasi di sisi kiri (pengganti ilustrasi bawaan), gambar latar, dan pilihan menyembunyikan ilustrasi |
+| Setelah masuk | Latar di belakang isi aplikasi: abu-abu bawaan, abu-abu dengan sentuhan warna template, atau gambar latar dengan tiga tingkat kejelasan |
+
+- Gambar yang diterima: PNG, JPG, WEBP, atau GIF, paling besar 5 MB (bisa lebih kecil bila `upload_max_filesize` di hosting lebih kecil). Setiap gambar bisa dikembalikan ke bawaan dengan tombol **Pakai bawaan lagi**.
+- Gambar disimpan di folder `uploads/`, bukan di database, jadi tidak ikut di cadangan `.sql`. Saat memindahkan aplikasi, salin juga folder ini. Folder ini harus bisa ditulis server; Status server infraAdmin memeriksanya.
+- `uploads/.htaccess` mencegah file selain gambar dibuka dari folder ini.
 
 ## Bahasa
 
@@ -145,5 +160,6 @@ Menu **Pengaturan** menyediakan unduhan data dalam bentuk JSON. Untuk cadangan y
 | `admin.php` | Halaman admin, dipakai oleh kedua link di atas |
 | `install.php` | Halaman pemasangan, hapus setelah selesai |
 | `config.php` | Data koneksi database, dibuat otomatis |
-| `lib/` | Program inti: database, login, hak akses, pemasangan, data contoh, terjemahan pesan server (`i18n.php`) |
+| `lib/` | Program inti: database, login, hak akses, pemasangan, data contoh, tampilan dari menu Tampilan (`ui.php`), terjemahan pesan server (`i18n.php`) |
+| `uploads/` | Logo dan gambar yang diunggah sysAdmin di menu Tampilan |
 | `assets/` | Tampilan: `app.css`, `app.js`, terjemahan tampilan (`i18n.js`), `admin.css`, `logo.png` |
