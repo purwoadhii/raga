@@ -30,7 +30,7 @@ Semua akun admin yang aktif bisa masuk ke kedua halaman, apa pun perannya. Isi m
 
 | Halaman | Menu |
 | --- | --- |
-| **sysAdmin** | Ringkasan, Anggota (tambah, ubah, atur role, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Tampilan, Akun admin, Catatan aktivitas |
+| **sysAdmin** | Ringkasan, Anggota dengan submenu Aktif dan Tidak aktif (tambah, ubah, atur role, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Tampilan, Akun admin, Catatan aktivitas |
 | **infraAdmin** | Status server (PHP, database, HTTPS, izin file, ruang disk), Cadangan database (.sql), Mode pemeliharaan, Catatan aktivitas dan pembersihannya |
 
 **Akun admin bawaan.** Saat aplikasi disiapkan, dua akun dibuat otomatis:

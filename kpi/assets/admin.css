@@ -71,6 +71,11 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:
 .nav a{padding:9px 12px;border-radius:9px;color:var(--fg);text-decoration:none;font-weight:600;font-size:13.5px}
 .nav a:hover{background:var(--surface-2)}
 .nav a.on{background:var(--accent-soft);color:var(--accent)}
+.nav a.open{color:var(--accent)}
+.nav a.sub{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;padding-inline-start:28px;font-weight:500;font-size:13px;color:var(--muted)}
+.nav a.sub.on{color:var(--accent);font-weight:600}
+.nav .count{font-size:11.5px;font-weight:700;min-width:22px;padding:1px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted);text-align:center}
+.nav a.sub.on .count{background:var(--surface);color:var(--accent)}
 .main{display:flex;flex-direction:column;gap:16px;min-width:0}
 
 /* Kartu, tabel */
@@ -219,6 +224,7 @@ legend{font-family:var(--f-head);font-size:13.5px;font-weight:600;padding:0 6px}
   .nav::-webkit-scrollbar{display:none}
   .nav a{white-space:nowrap;border:1px solid var(--line);background:var(--surface);padding:7px 12px}
   .nav a.on{border-color:var(--accent)}
+  .nav a.sub{padding:7px 12px;font-size:13.5px}
   .top{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   .who-name,.brand small{display:none}
   .on-dark .lang-cur{display:none}

@@ -78,12 +78,19 @@ function adm_set_lang(string $code, string $path): void
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && isset($_GET['lang']) && is_string($_GET['lang'])) {
     adm_set_lang($_GET['lang'], $admPath);
     $keep = [];
-    foreach (['p', 'edit', 'new', 'q'] as $k) {
+    foreach (['p', 'edit', 'new', 'q', 'status'] as $k) {
         if (isset($_GET[$k]) && is_string($_GET[$k]) && $_GET[$k] !== '') {
             $keep[$k] = $_GET[$k];
         }
     }
     adm_go(http_build_query($keep));
+}
+
+/** Submenu anggota (aktif atau tidak aktif) yang sedang dibuka saat formulir dikirim. */
+function adm_status_q(): string
+{
+    $s = adm_member_status($_POST['_status'] ?? '');
+    return $s !== '' ? '&status=' . $s : '';
 }
 
 /** Alamat kembali dari formulir: hanya halaman milik peran ini, dengan id angka. */
@@ -93,7 +100,7 @@ function adm_back(array $pages, string $fallback): string
     if (!isset($pages[$page])) {
         $page = $fallback;
     }
-    $q = 'p=' . $page;
+    $q = 'p=' . $page . adm_status_q();
     if (isset($_POST['_edit']) && ctype_digit((string)$_POST['_edit'])) {
         $q .= '&edit=' . $_POST['_edit'];
     } elseif (!empty($_POST['_new'])) {
@@ -192,7 +199,7 @@ try {
                     $role = kpi_role(kpi_all_users()[$id] ?? []);
                     kpi_admin_log($admin, 'user_save', "user=$id username=$username role=$role");
                     adm_flash('ok', kpi_t('Data anggota "{0}" sudah disimpan.', $username));
-                    adm_go('p=anggota');
+                    adm_go('p=anggota' . adm_status_q());
                     break;
                 }
                 case 'user_toggle': {
@@ -202,7 +209,7 @@ try {
                     kpi_admin_log($admin, $on ? 'user_aktif' : 'user_nonaktif', 'username=' . $u['username']);
                     adm_flash('ok', $on ? kpi_t('Akun "{0}" diaktifkan kembali.', $u['username'])
                                         : kpi_t('Akun "{0}" dinonaktifkan dan tidak bisa masuk.', $u['username']));
-                    adm_go('p=anggota');
+                    adm_go('p=anggota' . adm_status_q());
                     break;
                 }
                 case 'user_delete': {
@@ -216,7 +223,7 @@ try {
                     kpi_user_delete($id);
                     kpi_admin_log($admin, 'user_delete', "user=$id username=$uname");
                     adm_flash('ok', kpi_t('Anggota "{0}" beserta KPI miliknya sudah dihapus.', $uname));
-                    adm_go('p=anggota');
+                    adm_go('p=anggota' . adm_status_q());
                     break;
                 }
                 case 'user_unlock': {
