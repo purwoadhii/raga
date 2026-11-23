@@ -187,8 +187,10 @@ try {
                         'username' => $_POST['username'] ?? '',
                         'password' => $_POST['password'] ?? '',
                         'parentId' => $_POST['parentId'] ?? '',
-                    ]);
-                    kpi_admin_log($admin, 'user_save', "user=$id username=$username");
+                        'role'     => isset($_POST['role']) ? (string)$_POST['role'] : null,
+                    ], true);
+                    $role = kpi_role(kpi_all_users()[$id] ?? []);
+                    kpi_admin_log($admin, 'user_save', "user=$id username=$username role=$role");
                     adm_flash('ok', kpi_t('Data anggota "{0}" sudah disimpan.', $username));
                     adm_go('p=anggota');
                     break;

@@ -63,6 +63,7 @@ function kpi_install_data(PDO $pdo, array $o): void
     $set->execute(['cap', '120']);
     $set->execute(['year', (string)$year]);
     $set->execute(['demo_mode', $mode === 'demo' ? '1' : '0']);
+    $set->execute(['schema_version', '2']);
 
     if ($mode === 'demo') {
         kpi_seed_demo($pdo, $year);

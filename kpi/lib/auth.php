@@ -6,6 +6,20 @@
 const KPI_LEVELS     = ['ceo', 'div', 'unit', 'staff'];
 const KPI_CHILD_LEVEL = ['ceo' => 'div', 'div' => 'unit', 'unit' => 'staff', 'staff' => null];
 const KPI_MAX_ATTEMPTS = 8;
+
+/**
+ * Role anggota, diatur sysAdmin di menu Anggota. Level (CEO, Division Head, Unit Head, Staff)
+ * tetap mengikuti atasan; role menambah hak di luar timnya sendiri.
+ *   anggota    melihat dan mengatur dirinya serta tim di bawahnya (seperti sebelumnya)
+ *   pemantau   juga bisa melihat KPI dan skor semua anggota, tanpa mengubahnya
+ *   pengelola  bisa melihat semua anggota, mengatur KPI siapa pun, struktur organisasi,
+ *              dan pengaturan aplikasi, seperti CEO
+ */
+const KPI_ROLES = [
+    'anggota'   => 'Anggota biasa',
+    'pemantau'  => 'Pemantau',
+    'pengelola' => 'Pengelola KPI',
+];
 const KPI_LOCK_MINUTES = 15;
 
 function kpi_session_start(): void
@@ -232,9 +246,30 @@ function kpi_descendant_ids(int $rootId): array
     return array_keys($out);
 }
 
-/** Pengguna yang boleh dilihat: diri sendiri dan seluruh bawahannya. */
+function kpi_role(array $u): string
+{
+    $r = (string)($u['role'] ?? 'anggota');
+    return isset(KPI_ROLES[$r]) ? $r : 'anggota';
+}
+
+/** Boleh melihat KPI semua anggota: CEO, Pemantau, dan Pengelola KPI. */
+function kpi_sees_all(array $u): bool
+{
+    return $u['level'] === 'ceo' || kpi_role($u) !== 'anggota';
+}
+
+/** Boleh mengatur KPI siapa pun, struktur organisasi, dan pengaturan aplikasi: CEO dan Pengelola KPI. */
+function kpi_is_manager(array $u): bool
+{
+    return $u['level'] === 'ceo' || kpi_role($u) === 'pengelola';
+}
+
+/** Pengguna yang boleh dilihat: diri sendiri dan seluruh bawahannya, atau semua orang bila role-nya mengizinkan. */
 function kpi_scope_ids(array $viewer): array
 {
+    if (kpi_sees_all($viewer)) {
+        return array_keys(kpi_all_users());
+    }
     return array_merge([(int)$viewer['id']], kpi_descendant_ids((int)$viewer['id']));
 }
 
@@ -251,7 +286,7 @@ function kpi_is_ancestor(int $maybeAncestor, int $userId): bool
 /** Boleh menetapkan atau mengubah KPI milik pengguna ini. */
 function kpi_can_define(array $viewer, int $ownerId): bool
 {
-    return $viewer['level'] === 'ceo' || kpi_is_ancestor((int)$viewer['id'], $ownerId);
+    return kpi_is_manager($viewer) || kpi_is_ancestor((int)$viewer['id'], $ownerId);
 }
 
 /** Boleh menyetujui realisasi pengguna ini (hanya atasan langsung). */
@@ -261,9 +296,10 @@ function kpi_can_approve(array $viewer, int $ownerId): bool
     return isset($users[$ownerId]) && (int)($users[$ownerId]['parent_id'] ?? 0) === (int)$viewer['id'];
 }
 
-function kpi_require_ceo(array $viewer): void
+/** Struktur organisasi dan pengaturan aplikasi: hanya CEO dan Pengelola KPI. */
+function kpi_require_manager(array $viewer): void
 {
-    if ($viewer['level'] !== 'ceo') {
-        throw new KpiApiError('Hanya CEO yang dapat melakukan tindakan ini.', 403);
+    if (!kpi_is_manager($viewer)) {
+        throw new KpiApiError('Hanya CEO atau Pengelola KPI yang dapat melakukan tindakan ini.', 403);
     }
 }

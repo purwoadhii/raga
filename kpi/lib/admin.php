@@ -66,6 +66,7 @@ function kpi_admin_panel(array $admin): string
 /** Membuat tabel admins bila belum ada (pemasangan sebelum fitur ini). */
 function kpi_admin_ensure_schema(): void
 {
+    kpi_migrate();
     // Pengaturan dibaca ulang bila ada akun bawaan yang baru dibuat (penanda tersimpan di settings).
     if (kpi_admin_seed_default(db())) {
         kpi_settings(true);

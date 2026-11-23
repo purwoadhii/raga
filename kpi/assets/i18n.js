@@ -330,6 +330,16 @@ window.KPI_I18N = {
     [`Pengaturan disimpan`, `Settings saved`, `设置已保存`, `設定を保存しました`, `تم حفظ الإعدادات`, `Paramètres enregistrés`, `Einstellungen gespeichert`, `Configuración guardada`],
     [`Unit`, `Unit`, `单位`, `所属`, `الوحدة`, `Unité`, `Einheit`, `Unidad`],
     [`Tabel disalin. Tempel di Excel dengan Ctrl+V`, `Table copied. Paste it into Excel with Ctrl+V`, `表格已复制。在Excel中按 Ctrl+V 粘贴`, `表をコピーしました。Excelで Ctrl+V を押して貼り付けてください`, `تم نسخ الجدول. الصقه في Excel باستخدام Ctrl+V`, `Tableau copié. Collez-le dans Excel avec Ctrl+V`, `Tabelle kopiert. In Excel mit Strg+V einfügen`, `Tabla copiada. Péguela en Excel con Ctrl+V`],
-    [`Browser menolak menyalin. Coba lagi.`, `The browser blocked copying. Try again.`, `浏览器拒绝复制，请重试。`, `ブラウザーがコピーを許可しませんでした。もう一度お試しください。`, `رفض المتصفح النسخ. حاول مرة أخرى.`, `Le navigateur a refusé la copie. Réessayez.`, `Der Browser hat das Kopieren blockiert. Bitte erneut versuchen.`, `El navegador bloqueó la copia. Inténtelo de nuevo.`]
+    [`Browser menolak menyalin. Coba lagi.`, `The browser blocked copying. Try again.`, `浏览器拒绝复制，请重试。`, `ブラウザーがコピーを許可しませんでした。もう一度お試しください。`, `رفض المتصفح النسخ. حاول مرة أخرى.`, `Le navigateur a refusé la copie. Réessayez.`, `Der Browser hat das Kopieren blockiert. Bitte erneut versuchen.`, `El navegador bloqueó la copia. Inténtelo de nuevo.`],
+    [`Pemantau`, `Viewer`, `查看者`, `閲覧者`, `مُراقِب`, `Observateur`, `Beobachter`, `Observador`],
+    [`Pengelola KPI`, `KPI Manager`, `KPI管理员`, `KPI管理者`, `مدير مؤشرات الأداء`, `Gestionnaire des KPI`, `KPI-Manager`, `Gestor de KPI`],
+    [`Semua Anggota`, `All Members`, `全体成员`, `全メンバー`, `جميع الأعضاء`, `Tous les membres`, `Alle Mitglieder`, `Todos los miembros`],
+    [`Semua anggota`, `All members`, `全体成员`, `全メンバー`, `جميع الأعضاء`, `Tous les membres`, `Alle Mitglieder`, `Todos los miembros`],
+    [`Role Anda ({0}) bisa melihat KPI semua anggota.`, `Your role ({0}) can see the KPIs of every member.`, `您的角色（{0}）可以查看所有成员的KPI。`, `あなたのロール（{0}）では、すべてのメンバーのKPIを閲覧できます。`, `يتيح لك دورك ({0}) الاطلاع على مؤشرات أداء جميع الأعضاء.`, `Votre rôle ({0}) permet de consulter les KPI de tous les membres.`, `Mit Ihrer Rolle ({0}) sehen Sie die KPIs aller Mitglieder.`, `Su rol ({0}) le permite ver los KPI de todos los miembros.`],
+    [`Cakupan`, `Scope`, `范围`, `表示範囲`, `النطاق`, `Portée`, `Umfang`, `Alcance`],
+    [`Tim saya`, `My team`, `我的团队`, `自分のチーム`, `فريقي`, `Mon équipe`, `Mein Team`, `Mi equipo`],
+    [`Saya sendiri`, `Just me`, `仅我自己`, `自分のみ`, `أنا فقط`, `Moi uniquement`, `Nur ich`, `Solo yo`],
+    [`Klik nama untuk melihat KPI-nya.`, `Click a name to see their KPIs.`, `点击姓名查看其KPI。`, `名前をクリックするとKPIを表示します。`, `انقر على الاسم لعرض مؤشرات أدائه.`, `Cliquez sur un nom pour voir ses KPI.`, `Klicken Sie auf einen Namen, um die KPIs zu sehen.`, `Haga clic en un nombre para ver sus KPI.`],
+    [`Seluruh perusahaan`, `Whole company`, `全公司`, `全社`, `الشركة كلها`, `Toute l'entreprise`, `Ganzes Unternehmen`, `Toda la empresa`]
   ]
 };

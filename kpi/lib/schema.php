@@ -18,6 +18,7 @@ function kpi_schema_statements(): array
         name          VARCHAR(120) NOT NULL,
         title         VARCHAR(120) NOT NULL DEFAULT '',
         level         VARCHAR(10)  NOT NULL,
+        role          VARCHAR(12)  NOT NULL DEFAULT 'anggota',
         parent_id     INT UNSIGNED NULL,
         dept          VARCHAR(120) NOT NULL DEFAULT '',
         username      VARCHAR(64)  NOT NULL,

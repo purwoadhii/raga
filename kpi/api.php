@@ -26,6 +26,7 @@ if (!kpi_is_installed()) {
 }
 
 try {
+    kpi_migrate();
     $maintenance = kpi_maintenance_message();
     if ($maintenance !== null) {
         kpi_fail($maintenance, 503);

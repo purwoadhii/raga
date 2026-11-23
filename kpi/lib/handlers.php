@@ -85,6 +85,7 @@ function kpi_public_user(array $u, bool $withUsername): array
         'name'     => $u['name'],
         'title'    => $u['title'],
         'level'    => $u['level'],
+        'role'     => kpi_role($u),
         'parentId' => $u['parent_id'] !== null ? (string)$u['parent_id'] : null,
         'dept'     => $u['dept'],
     ];
@@ -125,15 +126,16 @@ function kpi_public_kpi(array $k, bool $full = true): array
 function kpi_bootstrap(array $viewer): array
 {
     $db      = db();
-    $scope   = kpi_scope_ids($viewer);
     $all     = kpi_all_users(true);
     $scope   = kpi_scope_ids($viewer);
     $year    = kpi_year();
-    $isCeo   = $viewer['level'] === 'ceo';
+    $manager = kpi_is_manager($viewer);
+    // Username hanya untuk tim sendiri, atau semua bila boleh mengatur anggota.
+    $own     = array_merge([(int)$viewer['id']], kpi_descendant_ids((int)$viewer['id']));
 
     $users = [];
     foreach ($all as $id => $u) {
-        $users[] = kpi_public_user($u, $isCeo || in_array((int)$id, $scope, true));
+        $users[] = kpi_public_user($u, $manager || in_array((int)$id, $own, true));
     }
 
     $place = implode(',', array_fill(0, count($scope), '?'));
@@ -199,8 +201,12 @@ function kpi_bootstrap(array $viewer): array
 
 /* ---------- Kelola anggota (dipakai API dan halaman admin) ---------- */
 
-/** Menambah atau mengubah anggota. Mengembalikan [id, username]. */
-function kpi_user_save(array $in): array
+/**
+ * Menambah atau mengubah anggota. Mengembalikan [id, username].
+ * $withRole: role ikut disimpan (hanya dari halaman sysAdmin); bila isian role tidak
+ * dikirim, role yang lama tetap. Role CEO tidak diubah karena CEO sudah punya semua hak.
+ */
+function kpi_user_save(array $in, bool $withRole = false): array
 {
     $db    = db();
     $id    = in_id($in, 'id', false);
@@ -221,6 +227,13 @@ function kpi_user_save(array $in): array
         throw new KpiApiError('Username "{0}" sudah dipakai. Gunakan username lain.', 400, [$username]);
     }
     $users = kpi_all_users();
+    $role  = null;
+    if ($withRole && array_key_exists('role', $in) && $in['role'] !== null) {
+        $role = (string)$in['role'];
+        if (!isset(KPI_ROLES[$role])) {
+            throw new KpiApiError('Role tidak dikenal.');
+        }
+    }
 
     if ($id) {
         if (!isset($users[$id])) {
@@ -244,6 +257,9 @@ function kpi_user_save(array $in): array
         }
         $up = $db->prepare('UPDATE users SET name=?, title=?, dept=?, username=? WHERE id=?');
         $up->execute([$name, $title, $dept, $username, $id]);
+        if ($role !== null && $cur['level'] !== 'ceo') {
+            $db->prepare('UPDATE users SET role = ? WHERE id = ?')->execute([$role, $id]);
+        }
         if ($pass !== '') {
             if (mb_strlen($pass) < 4) {
                 throw new KpiApiError('Password minimal 4 karakter.');
@@ -263,11 +279,12 @@ function kpi_user_save(array $in): array
         if (mb_strlen($pass) < 4) {
             throw new KpiApiError('Password minimal 4 karakter.');
         }
-        $up = $db->prepare('INSERT INTO users (name, title, level, parent_id, dept, username, password_hash) VALUES (?,?,?,?,?,?,?)');
+        $up = $db->prepare('INSERT INTO users (name, title, level, role, parent_id, dept, username, password_hash) VALUES (?,?,?,?,?,?,?,?)');
         $up->execute([
             $name,
             $title ?: ucfirst($level),
             $level,
+            $role ?? 'anggota',
             $parentId,
             $dept ?: $users[$parentId]['dept'],
             $username,
@@ -536,7 +553,12 @@ function kpi_handle(string $action, array $in): array
 
         case 'user_save': {
             $me = kpi_require_user();
-            kpi_require_ceo($me);
+            kpi_require_manager($me);
+            $target = in_id($in, 'id', false);
+            $users  = kpi_all_users();
+            if ($target && isset($users[$target]) && $users[$target]['level'] === 'ceo' && $me['level'] !== 'ceo') {
+                throw new KpiApiError('Data CEO hanya bisa diubah oleh CEO sendiri.', 403);
+            }
             [$id, $username] = kpi_user_save($in);
             kpi_log((string)$me['id'], 'user_save', "user=$id username=$username");
             return ['data' => kpi_bootstrap($me)];
@@ -544,7 +566,7 @@ function kpi_handle(string $action, array $in): array
 
         case 'user_delete': {
             $me = kpi_require_user();
-            kpi_require_ceo($me);
+            kpi_require_manager($me);
             $id = in_id($in, 'id');
             if ($id === (int)$me['id']) {
                 throw new KpiApiError('Anda tidak dapat menghapus akun Anda sendiri.');
@@ -572,7 +594,7 @@ function kpi_handle(string $action, array $in): array
 
         case 'settings_save': {
             $me = kpi_require_user();
-            kpi_require_ceo($me);
+            kpi_require_manager($me);
             $company = in_str($in, 'company', 120);
             $cap     = in_num($in, 'cap', 120);
             $year    = (int)in_num($in, 'year', kpi_year());

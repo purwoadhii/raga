@@ -17,6 +17,7 @@ if (!kpi_is_installed()) {
 }
 
 try {
+    kpi_migrate();
     $maintenance = kpi_maintenance_message();
     if ($maintenance !== null) {
         http_response_code(503);
