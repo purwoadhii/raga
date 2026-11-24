@@ -40,7 +40,9 @@ const KPI_UI_TYPES = [
 const KPI_UI_MAX_MB = 5;
 
 /** Latar aplikasi setelah masuk. */
-const KPI_UI_APP_BG_MODES = ['default', 'tint', 'image'];
+const KPI_UI_APP_BG_MODES = ['default', 'tint', 'color', 'image'];
+/** Warna awal untuk pilihan "Warna sendiri" di latar aplikasi. */
+const KPI_UI_APP_BG_COLOR = '#DCE6F5';
 /** Kejelasan gambar latar aplikasi: seberapa tebal lapisan warna di atasnya. */
 const KPI_UI_VEILS = ['soft' => 0.88, 'medium' => 0.74, 'strong' => 0.55];
 
@@ -355,6 +357,49 @@ function kpi_ui_app_bg_mode(): string
     return $m;
 }
 
+/** Warna sendiri untuk latar aplikasi (pilihan 'color'). */
+function kpi_ui_app_bg_color(): string
+{
+    $c = (string)kpi_setting('ui_app_bg_color', '');
+    return preg_match('/^#[0-9A-Fa-f]{6}$/', $c) ? strtoupper($c) : KPI_UI_APP_BG_COLOR;
+}
+
+/** Warna latar halaman masuk pilihan sendiri, atau null bila mengikuti warna template. */
+function kpi_ui_login_color(): ?string
+{
+    if (kpi_setting('ui_login_color_mode', 'template') !== 'custom') {
+        return null;
+    }
+    $c = (string)kpi_setting('ui_login_color', '');
+    return preg_match('/^#[0-9A-Fa-f]{6}$/', $c) ? strtoupper($c) : null;
+}
+
+/** Warna yang terakhir dipilih untuk latar halaman masuk (juga saat sedang mengikuti template). */
+function kpi_ui_login_color_saved(): string
+{
+    $c = (string)kpi_setting('ui_login_color', '');
+    return preg_match('/^#[0-9A-Fa-f]{6}$/', $c) ? strtoupper($c) : kpi_ui_palette(kpi_ui_color())['light']['lg-b'];
+}
+
+/**
+ * Warna panel halaman masuk untuk warna latar sendiri. Tulisan dibuat putih atau gelap,
+ * mana yang lebih terbaca di atas warna itu.
+ */
+function kpi_ui_login_vars(string $c): array
+{
+    [$h, $s, $l] = kpi_ui_hsl($c);
+    $white = kpi_ui_contrast('#FFFFFF', $c) >= kpi_ui_contrast('#151A2E', $c);
+    $fg    = $white ? '#FFFFFF' : '#151A2E';
+    return [
+        'lg-a'     => kpi_ui_from_hsl($h, $s, min(1.0, $l + 0.06)),
+        'lg-b'     => $c,
+        'lg-c'     => kpi_ui_from_hsl($h, $s, max(0.0, $l - 0.06)),
+        'lg-fg'    => $fg,
+        'lg-muted' => kpi_ui_readable(kpi_ui_mix($fg, $c, 0.78), $c, 4.5, $white),
+        'lg-grid'  => $white ? 'rgba(255,255,255,.035)' : 'rgba(21,26,46,.05)',
+    ];
+}
+
 function kpi_ui_veil(): string
 {
     $v = (string)kpi_setting('ui_app_bg_veil', 'soft');
@@ -402,9 +447,18 @@ function kpi_ui_css(): string
         $css .= '.lg-hero svg{filter:hue-rotate(' . $rot . 'deg)' . ($sat < 1 ? ' saturate(' . $sat . ')' : '') . '}';
     }
 
+    // Warna latar halaman masuk pilihan sendiri (panel kiri dan tepi di sekitar kartu masuk).
+    $loginColor = kpi_ui_login_color();
+    $lgC        = $p['light']['lg-c'];
+    if ($loginColor !== null) {
+        $lv  = kpi_ui_login_vars($loginColor);
+        $lgC = $lv['lg-c'];
+        $css .= '.login{' . $vars($lv) . 'background:' . $loginColor . '}';
+    }
+
     $loginBg = kpi_ui_image('login_bg');
     if ($loginBg !== null) {
-        [$r, $g, $b] = kpi_ui_rgb($p['light']['lg-c']);
+        [$r, $g, $b] = kpi_ui_rgb($lgC);
         $css .= '.login{background:var(--lg-c) url("' . $loginBg . '") center/cover no-repeat}'
               . '.lg-hero{background:linear-gradient(180deg,rgba(' . "$r,$g,$b" . ',.28),rgba(' . "$r,$g,$b" . ',.78))}';
     }
@@ -414,6 +468,21 @@ function kpi_ui_css(): string
         $css .= '.app{background:' . kpi_ui_mix($base, '#F3F4F8', 0.10) . '}'
               . '@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .app{background:' . kpi_ui_mix($base, '#0E1120', 0.16) . '}}'
               . ':root[data-theme="dark"] .app{background:' . kpi_ui_mix($base, '#0E1120', 0.16) . '}';
+    } elseif ($mode === 'color') {
+        // Warna sendiri. Di tampilan gelap warnanya dicampur gelap supaya tulisan tetap terbaca.
+        $c    = kpi_ui_app_bg_color();
+        $dark = kpi_ui_mix($c, '#0E1120', 0.18);
+        $css .= '.app{background:' . $c . '}'
+              . '@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .app{background:' . $dark . '}}'
+              . ':root[data-theme="dark"] .app{background:' . $dark . '}';
+        if (kpi_ui_contrast('#151A2E', $c) < 4.5) {
+            // Latar gelap: judul halaman (di luar kartu) dibuat terang, hanya di tampilan terang.
+            $muted = kpi_ui_readable(kpi_ui_mix('#FFFFFF', $c, 0.80), $c, 4.5, true);
+            $css .= '.app{--top-fg:#FFFFFF;--top-muted:' . $muted . '}'
+                  . '@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .app{--top-fg:var(--fg);--top-muted:var(--muted)}}'
+                  . ':root[data-theme="dark"] .app{--top-fg:var(--fg);--top-muted:var(--muted)}'
+                  . '.top h1{color:var(--top-fg)}.top .eyebrow,.top .period{color:var(--top-muted)}.top select.inline{color:var(--fg)}';
+        }
     } elseif ($mode === 'image') {
         $a = KPI_UI_VEILS[kpi_ui_veil()];
         $css .= ':root{--ui-veil:rgba(243,244,248,' . $a . ')}'
@@ -455,12 +524,16 @@ function kpi_ui_swatch_svg(string $kind): string
 {
     $base = kpi_ui_color();
     $p    = kpi_ui_palette($base)['light'];
-    if ($kind === 'login') {
+    if ($kind === 'login' || $kind === 'login-template' || $kind === 'login-custom') {
+        $lc = $kind === 'login' ? kpi_ui_login_color() : ($kind === 'login-custom' ? kpi_ui_login_color_saved() : null);
+        if ($lc !== null) {
+            $p = kpi_ui_login_vars($lc) + $p;
+        }
         $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 96"><defs><radialGradient id="g" cx="0" cy="0" r="1.3">'
              . '<stop offset="0" stop-color="' . $p['lg-a'] . '"/><stop offset=".55" stop-color="' . $p['lg-b'] . '"/>'
              . '<stop offset="1" stop-color="' . $p['lg-c'] . '"/></radialGradient></defs><rect width="160" height="96" fill="url(#g)"/></svg>';
     } else {
-        $bg  = $kind === 'tint' ? kpi_ui_mix($base, '#F3F4F8', 0.10) : '#F3F4F8';
+        $bg  = $kind === 'tint' ? kpi_ui_mix($base, '#F3F4F8', 0.10) : ($kind === 'color' ? kpi_ui_app_bg_color() : '#F3F4F8');
         $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 96"><rect width="160" height="96" fill="' . $bg . '"/>'
              . '<rect width="40" height="96" fill="#fff"/><rect x="8" y="22" width="24" height="7" rx="3" fill="' . $p['accent-soft'] . '"/>'
              . '<rect x="52" y="14" width="96" height="30" rx="5" fill="#fff" stroke="#DCE0EB"/>'

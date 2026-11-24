@@ -310,9 +310,26 @@ try {
                 }
                 case 'ui_login_save': {
                     $need('sysadmin');
-                    $show = !empty($_POST['show_art']);
+                    $show   = !empty($_POST['show_art']);
+                    $lcMode = (string)($_POST['login_color_mode'] ?? 'template');
+                    $lc     = strtoupper(trim((string)($_POST['login_color'] ?? '')));
+                    if ($lc !== '' && !preg_match('/^#[0-9A-F]{6}$/', $lc)) {
+                        throw new KpiApiError('Warna tidak valid.');
+                    }
+                    // Warna yang diubah tanpa memilih "Warna sendiri" tetap dianggap pilihan.
+                    if ($lc !== '' && $lc !== strtoupper((string)($_POST['login_color_was'] ?? ''))) {
+                        $lcMode = 'custom';
+                    }
+                    if (!in_array($lcMode, ['template', 'custom'], true)) {
+                        throw new KpiApiError('Pilih salah satu warna latar.');
+                    }
                     kpi_set_setting('ui_login_art_show', $show ? '1' : '0');
-                    kpi_admin_log($admin, 'tampilan_ubah', 'ilustrasi halaman masuk: ' . ($show ? 'tampil' : 'disembunyikan'));
+                    kpi_set_setting('ui_login_color_mode', $lcMode);
+                    if ($lcMode === 'custom' && $lc !== '') {
+                        kpi_set_setting('ui_login_color', $lc);
+                    }
+                    kpi_admin_log($admin, 'tampilan_ubah', 'ilustrasi halaman masuk: ' . ($show ? 'tampil' : 'disembunyikan')
+                        . ', warna latar: ' . ($lcMode === 'custom' ? $lc : 'template'));
                     adm_flash('ok', kpi_t('Pengaturan halaman masuk sudah disimpan.'));
                     adm_go('p=tampilan#ui-login');
                     break;
@@ -321,6 +338,14 @@ try {
                     $need('sysadmin');
                     $mode = (string)($_POST['bg_mode'] ?? '');
                     $veil = (string)($_POST['veil'] ?? 'soft');
+                    $ac   = strtoupper(trim((string)($_POST['app_color'] ?? '')));
+                    if ($ac !== '' && !preg_match('/^#[0-9A-F]{6}$/', $ac)) {
+                        throw new KpiApiError('Warna tidak valid.');
+                    }
+                    // Warna yang diubah tanpa memilih "Warna sendiri" tetap dianggap pilihan.
+                    if ($ac !== '' && $ac !== strtoupper((string)($_POST['app_color_was'] ?? ''))) {
+                        $mode = 'color';
+                    }
                     if (!in_array($mode, KPI_UI_APP_BG_MODES, true) || !isset(KPI_UI_VEILS[$veil])) {
                         throw new KpiApiError('Pilih salah satu latar.');
                     }
@@ -329,7 +354,11 @@ try {
                     }
                     kpi_set_setting('ui_app_bg_mode', $mode);
                     kpi_set_setting('ui_app_bg_veil', $veil);
-                    kpi_admin_log($admin, 'tampilan_ubah', 'latar aplikasi: ' . $mode . ($mode === 'image' ? ', ' . $veil : ''));
+                    if ($mode === 'color' && $ac !== '') {
+                        kpi_set_setting('ui_app_bg_color', $ac);
+                    }
+                    kpi_admin_log($admin, 'tampilan_ubah', 'latar aplikasi: ' . $mode . ($mode === 'image' ? ', ' . $veil : '')
+                        . ($mode === 'color' ? ', ' . ($ac !== '' ? $ac : kpi_ui_app_bg_color()) : ''));
                     adm_flash('ok', kpi_t('Latar aplikasi sudah disimpan.'));
                     adm_go('p=tampilan#ui-app');
                     break;

@@ -705,17 +705,29 @@ function adm_view_appearance(array $ctx): string
         . '</section>';
 
     // Halaman masuk
-    $show = kpi_ui_show_art();
+    $show    = kpi_ui_show_art();
+    $lcMode  = kpi_ui_login_color() !== null ? 'custom' : 'template';
+    $lcSaved = kpi_ui_login_color_saved();
     $html .= '<section class="card" id="ui-login"><div><h2>' . ht('Halaman masuk') . '</h2>'
         . '<p class="muted">' . ht('Halaman pertama yang dilihat anggota sebelum masuk.') . '</p></div>'
         . adm_ui_slot($csrf, 'login_logo', 'Logo halaman masuk', 'Logo di atas formulir masuk, di samping tulisan Key Performance Indicator. Bila tidak diisi, memakai Logo perusahaan.',
             '<img src="' . h(kpi_ui_logo()) . '" alt="">', 'logo', 'Sama dengan logo perusahaan', 'Pakai logo perusahaan')
         . adm_ui_slot($csrf, 'login_art', 'Gambar ilustrasi', 'Gambar besar di sisi kiri halaman masuk, menggantikan ilustrasi bawaan. Tidak tampil di layar ponsel.',
             '<span class="ph">' . ht('Ilustrasi bawaan') . '</span>', 'art')
-        . adm_ui_slot($csrf, 'login_bg', 'Gambar latar', 'Foto atau gambar di belakang halaman masuk. Sisi kiri diberi lapisan warna template supaya tulisan tetap terbaca.',
+        . adm_ui_slot($csrf, 'login_bg', 'Gambar latar', 'Foto atau gambar di belakang halaman masuk. Sisi kiri diberi lapisan warna latar halaman masuk supaya tulisan tetap terbaca.',
             '<img src="' . h(kpi_ui_swatch_svg('login')) . '" alt="">', 'bg')
         . '<form class="form sub-form" method="post" action="' . ADM_SELF . '">' . adm_csrf_field($csrf)
         . '<input type="hidden" name="_act" value="ui_login_save">' . $back
+        . '<fieldset id="ui-login-color"><legend>' . ht('Warna latar halaman masuk') . '</legend>'
+        . '<p class="muted small">' . ht('Warna panel kiri dan tepi di sekitar kartu masuk. Tulisan di panel otomatis putih atau gelap supaya tetap terbaca. Bila ada gambar latar, warna ini menjadi lapisan di atas gambar.') . '</p>'
+        . '<div class="themes">'
+        . adm_ui_choice('login_color_mode', 'template', $lcMode !== 'custom', kpi_ui_swatch_svg('login-template'), ht('Ikuti warna template'), ht('Bawaan'))
+        . '<div class="theme own"><label class="theme-pick"><input type="radio" name="login_color_mode" value="custom"' . ($lcMode === 'custom' ? ' checked' : '') . '>'
+        . '<img src="' . h(kpi_ui_swatch_svg('login-custom')) . '" alt="" width="160" height="96">'
+        . '<span class="theme-name">' . ht('Warna sendiri') . '</span></label>'
+        . '<label class="color-field"><span>' . ht('Pilih warna') . '</span><input type="color" name="login_color" value="' . h(strtolower($lcSaved)) . '"></label>'
+        . '<input type="hidden" name="login_color_was" value="' . h(strtolower($lcSaved)) . '"></div>'
+        . '</div></fieldset>'
         . '<label class="check"><input type="checkbox" name="show_art" value="1"' . ($show ? ' checked' : '') . '>'
         . '<span><b>' . ht('Tampilkan gambar ilustrasi') . '</b><small>' . ht('Hilangkan centang bila Anda hanya ingin menampilkan gambar latar.') . '</small></span></label>'
         . '<div class="actions"><button class="btn primary" type="submit">' . ht('Simpan') . '</button></div></form></section>';
@@ -733,6 +745,11 @@ function adm_view_appearance(array $ctx): string
         . '<fieldset><legend>' . ht('Pilihan latar') . '</legend><div class="themes">'
         . adm_ui_choice('bg_mode', 'default', $mode === 'default', kpi_ui_swatch_svg('default'), ht('Bawaan'), ht('Abu-abu muda polos'))
         . adm_ui_choice('bg_mode', 'tint', $mode === 'tint', kpi_ui_swatch_svg('tint'), ht('Warna template'), ht('Abu-abu muda dengan sentuhan warna template'))
+        . '<div class="theme own"><label class="theme-pick"><input type="radio" name="bg_mode" value="color"' . ($mode === 'color' ? ' checked' : '') . '>'
+        . '<img src="' . h(kpi_ui_swatch_svg('color')) . '" alt="" width="160" height="96">'
+        . '<span class="theme-name">' . ht('Warna sendiri') . '<small>' . ht('Di tampilan gelap warnanya dibuat lebih gelap') . '</small></span></label>'
+        . '<label class="color-field"><span>' . ht('Pilih warna') . '</span><input type="color" name="app_color" value="' . h(strtolower(kpi_ui_app_bg_color())) . '"></label>'
+        . '<input type="hidden" name="app_color_was" value="' . h(strtolower(kpi_ui_app_bg_color())) . '"></div>'
         . adm_ui_choice('bg_mode', 'image', $mode === 'image', $appImg ?? kpi_ui_swatch_svg('default'), ht('Gambar latar'),
             $appImg !== null ? ht('Gambar yang diunggah di atas') : ht('Unggah gambar dulu'))
         . '</div></fieldset>'

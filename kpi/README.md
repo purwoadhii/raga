@@ -62,8 +62,8 @@ Menu **Tampilan** di `/sysAdmin` mengatur tampilan aplikasi KPI untuk semua angg
 | --- | --- |
 | Warna template | Delapan warna siap pakai (Biru navy bawaan, Biru cerah, Toska, Hijau, Merah marun, Ungu, Oranye, Abu-abu grafit) atau warna sendiri. Mengubah warna tombol, menu, tautan, dan panel halaman masuk, termasuk di tampilan gelap |
 | Logo | Logo perusahaan di menu aplikasi, halaman admin, tab browser, dan halaman masuk (bila logo halaman masuk tidak diisi) |
-| Halaman masuk | Logo halaman masuk (boleh berbeda dari logo perusahaan; bila kosong memakai logo perusahaan), gambar ilustrasi di sisi kiri (pengganti ilustrasi bawaan), gambar latar, dan pilihan menyembunyikan ilustrasi |
-| Setelah masuk | Latar di belakang isi aplikasi: abu-abu bawaan, abu-abu dengan sentuhan warna template, atau gambar latar dengan tiga tingkat kejelasan |
+| Halaman masuk | Logo halaman masuk (boleh berbeda dari logo perusahaan; bila kosong memakai logo perusahaan), gambar ilustrasi di sisi kiri (pengganti ilustrasi bawaan), gambar latar, warna latar (ikut warna template atau warna sendiri; tulisan di panel kiri otomatis putih atau gelap supaya tetap terbaca), dan pilihan menyembunyikan ilustrasi |
+| Setelah masuk | Latar di belakang isi aplikasi: abu-abu bawaan, abu-abu dengan sentuhan warna template, warna sendiri (judul halaman otomatis terang bila warnanya gelap, dan di tampilan gelap warnanya dibuat lebih gelap), atau gambar latar dengan tiga tingkat kejelasan |
 
 - Gambar yang diterima: PNG, JPG, WEBP, atau GIF, paling besar 5 MB (bisa lebih kecil bila `upload_max_filesize` di hosting lebih kecil). Setiap gambar bisa dikembalikan ke bawaan dengan tombol **Pakai bawaan lagi**.
 - Gambar disimpan di folder `uploads/`, bukan di database, jadi tidak ikut di cadangan `.sql`. Saat memindahkan aplikasi, salin juga folder ini. Folder ini harus bisa ditulis server; Status server infraAdmin memeriksanya.
