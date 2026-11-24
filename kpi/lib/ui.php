@@ -23,7 +23,8 @@ const KPI_UI_DEFAULT_THEME = 'navy';
 
 /** Tempat gambar: kunci => awalan nama file. */
 const KPI_UI_SLOTS = [
-    'logo'      => 'logo',
+    'logo'       => 'logo',
+    'login_logo' => 'login-logo',
     'login_art' => 'login-art',
     'login_bg'  => 'login-bg',
     'app_bg'    => 'app-bg',
@@ -229,6 +230,12 @@ function kpi_ui_logo(): string
     return kpi_ui_image('logo') ?? 'assets/logo.png';
 }
 
+/** Logo di halaman masuk aplikasi: logo khusus halaman masuk, atau logo perusahaan bila kosong. */
+function kpi_ui_login_logo(): string
+{
+    return kpi_ui_image('login_logo') ?? kpi_ui_logo();
+}
+
 /** Batas ukuran unggahan dalam byte: 5 MB, atau lebih kecil bila php.ini membatasi. */
 function kpi_ui_upload_limit(): int
 {
@@ -360,8 +367,10 @@ function kpi_ui_veil(): string
 function kpi_ui_boot(): array
 {
     return [
-        'logo'    => kpi_ui_logo(),
-        'logoOwn' => kpi_ui_image('logo') !== null,
+        'logo'         => kpi_ui_logo(),
+        'logoOwn'      => kpi_ui_image('logo') !== null,
+        'loginLogo'    => kpi_ui_login_logo(),
+        'loginLogoOwn' => kpi_ui_image('login_logo') !== null || kpi_ui_image('logo') !== null,
         'art'     => kpi_ui_image('login_art'),
         'showArt' => kpi_ui_show_art(),
     ];

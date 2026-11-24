@@ -636,7 +636,8 @@ function adm_view_settings(array $ctx): string
 /* ---------- sysAdmin: Tampilan ---------- */
 
 /** Satu tempat gambar: contoh gambar sekarang, tombol unggah, dan tombol kembali ke bawaan. */
-function adm_ui_slot(string $csrf, string $slot, string $title, string $desc, string $default, string $kind): string
+function adm_ui_slot(string $csrf, string $slot, string $title, string $desc, string $default, string $kind,
+    string $defaultPill = 'Bawaan', string $resetLabel = 'Pakai bawaan lagi'): string
 {
     $own  = kpi_ui_image($slot);
     $prev = $own !== null ? '<img src="' . h($own) . '" alt="">' : $default;
@@ -644,7 +645,7 @@ function adm_ui_slot(string $csrf, string $slot, string $title, string $desc, st
     return '<div class="media" id="ui-' . h($slot) . '">'
         . '<div class="media-prev ' . h($kind) . '">' . $prev . '</div>'
         . '<div class="media-body"><div class="media-h"><h3>' . ht($title) . '</h3>'
-        . ($own !== null ? adm_pill(kpi_t('Gambar sendiri'), 'ok') : adm_pill(kpi_t('Bawaan'), '')) . '</div>'
+        . ($own !== null ? adm_pill(kpi_t('Gambar sendiri'), 'ok') : adm_pill(kpi_t($defaultPill), '')) . '</div>'
         . '<p class="muted small">' . ht($desc) . '</p>'
         . '<form class="upload" method="post" action="' . ADM_SELF . '" enctype="multipart/form-data">' . adm_csrf_field($csrf)
         . '<input type="hidden" name="_act" value="ui_upload">' . $keep
@@ -652,7 +653,7 @@ function adm_ui_slot(string $csrf, string $slot, string $title, string $desc, st
         . '<button class="btn primary" type="submit">' . ht('Unggah') . '</button></form>'
         . ($own !== null
             ? '<form method="post" action="' . ADM_SELF . '">' . adm_csrf_field($csrf) . '<input type="hidden" name="_act" value="ui_remove">' . $keep
-              . '<button class="btn danger-soft" type="submit">' . ht('Pakai bawaan lagi') . '</button></form>'
+              . '<button class="btn danger-soft" type="submit">' . ht($resetLabel) . '</button></form>'
             : '')
         . '</div></div>';
 }
@@ -699,7 +700,7 @@ function adm_view_appearance(array $ctx): string
 
         . '<section class="card" id="ui-brand"><div><h2>' . ht('Logo') . '</h2>'
         . '<p class="muted">' . ht('Gambar: PNG, JPG, WEBP, atau GIF, paling besar {0} MB.', kpi_ui_limit_mb()) . '</p></div>'
-        . adm_ui_slot($csrf, 'logo', 'Logo perusahaan', 'Tampil di halaman masuk, di menu aplikasi, di halaman admin, dan di tab browser. Paling bagus gambar persegi dengan latar transparan.',
+        . adm_ui_slot($csrf, 'logo', 'Logo perusahaan', 'Tampil di menu aplikasi, di halaman admin, di tab browser, dan di halaman masuk bila Logo halaman masuk tidak diisi. Paling bagus gambar persegi dengan latar transparan.',
             '<img src="assets/logo.png" alt="">', 'logo')
         . '</section>';
 
@@ -707,6 +708,8 @@ function adm_view_appearance(array $ctx): string
     $show = kpi_ui_show_art();
     $html .= '<section class="card" id="ui-login"><div><h2>' . ht('Halaman masuk') . '</h2>'
         . '<p class="muted">' . ht('Halaman pertama yang dilihat anggota sebelum masuk.') . '</p></div>'
+        . adm_ui_slot($csrf, 'login_logo', 'Logo halaman masuk', 'Logo di atas formulir masuk, di samping tulisan Key Performance Indicator. Bila tidak diisi, memakai Logo perusahaan.',
+            '<img src="' . h(kpi_ui_logo()) . '" alt="">', 'logo', 'Sama dengan logo perusahaan', 'Pakai logo perusahaan')
         . adm_ui_slot($csrf, 'login_art', 'Gambar ilustrasi', 'Gambar besar di sisi kiri halaman masuk, menggantikan ilustrasi bawaan. Tidak tampil di layar ponsel.',
             '<span class="ph">' . ht('Ilustrasi bawaan') . '</span>', 'art')
         . adm_ui_slot($csrf, 'login_bg', 'Gambar latar', 'Foto atau gambar di belakang halaman masuk. Sisi kiri diberi lapisan warna template supaya tulisan tetap terbaca.',
