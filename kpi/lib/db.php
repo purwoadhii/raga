@@ -83,28 +83,40 @@ function kpi_set_setting(string $key, $value): void
     kpi_settings(true);
 }
 
+/** Versi skema terbaru. Pemasangan baru langsung memakai versi ini. */
+const KPI_SCHEMA_VERSION = 3;
+
 /**
  * Perubahan tabel untuk pemasangan lama, dijalankan sekali saat halaman dibuka.
  * Versi skema disimpan di settings (schema_version).
  *   2: kolom users.role (role anggota yang diatur sysAdmin).
+ *   3: kolom users.role_scope (divisi atau unit yang dikelola Pengelola KPI).
  */
 function kpi_migrate(): void
 {
-    if ((int)kpi_setting('schema_version', '1') >= 2) {
+    if ((int)kpi_setting('schema_version', '1') >= KPI_SCHEMA_VERSION) {
         return;
     }
-    $db = db();
-    if (!$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch()) {
-        try {
-            $db->exec("ALTER TABLE users ADD COLUMN role VARCHAR(12) NOT NULL DEFAULT 'anggota' AFTER level");
-        } catch (Throwable $e) {
-            // Permintaan lain mungkin sudah menambahkannya pada saat yang sama.
-            if (!$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch()) {
-                throw $e;
-            }
+    kpi_add_column('users', 'role', "VARCHAR(12) NOT NULL DEFAULT 'anggota' AFTER level");
+    kpi_add_column('users', 'role_scope', 'INT UNSIGNED NULL AFTER role');
+    kpi_set_setting('schema_version', (string)KPI_SCHEMA_VERSION);
+}
+
+function kpi_add_column(string $table, string $column, string $definition): void
+{
+    $db  = db();
+    $has = fn() => (bool)$db->query("SHOW COLUMNS FROM `$table` LIKE " . $db->quote($column))->fetch();
+    if ($has()) {
+        return;
+    }
+    try {
+        $db->exec("ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+    } catch (Throwable $e) {
+        // Permintaan lain mungkin sudah menambahkannya pada saat yang sama.
+        if (!$has()) {
+            throw $e;
         }
     }
-    kpi_set_setting('schema_version', '2');
 }
 
 /** Pesan pemeliharaan bila aplikasi sedang ditutup sementara, selain itu null. */

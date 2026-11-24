@@ -340,6 +340,11 @@ window.KPI_I18N = {
     [`Tim saya`, `My team`, `我的团队`, `自分のチーム`, `فريقي`, `Mon équipe`, `Mein Team`, `Mi equipo`],
     [`Saya sendiri`, `Just me`, `仅我自己`, `自分のみ`, `أنا فقط`, `Moi uniquement`, `Nur ich`, `Solo yo`],
     [`Klik nama untuk melihat KPI-nya.`, `Click a name to see their KPIs.`, `点击姓名查看其KPI。`, `名前をクリックするとKPIを表示します。`, `انقر على الاسم لعرض مؤشرات أدائه.`, `Cliquez sur un nom pour voir ses KPI.`, `Klicken Sie auf einen Namen, um die KPIs zu sehen.`, `Haga clic en un nombre para ver sus KPI.`],
+    [`Superuser`, `Superuser`, `超级用户`, `スーパーユーザー`, `المستخدم الخارق`, `Superutilisateur`, `Superuser`, `Superusuario`],
+    [`Wilayah Kelola`, `Managed Area`, `管理范围`, `管理範囲`, `النطاق المُدار`, `Périmètre géré`, `Verwalteter Bereich`, `Área gestionada`],
+    [`Anggota {0}`, `Members of {0}`, `{0}的成员`, `{0}のメンバー`, `أعضاء {0}`, `Membres de {0}`, `Mitglieder von {0}`, `Miembros de {0}`],
+    [`Role Anda ({0}) bisa mengatur KPI semua anggota di {1}.`, `Your role ({0}) can manage the KPIs of every member in {1}.`, `您的角色（{0}）可以管理{1}所有成员的KPI。`, `あなたのロール（{0}）では、{1}のすべてのメンバーのKPIを管理できます。`, `يتيح لك دورك ({0}) إدارة مؤشرات أداء جميع الأعضاء في {1}.`, `Votre rôle ({0}) permet de gérer les KPI de tous les membres de {1}.`, `Mit Ihrer Rolle ({0}) verwalten Sie die KPIs aller Mitglieder in {1}.`, `Su rol ({0}) le permite gestionar los KPI de todos los miembros de {1}.`],
+    [`Skor hanya tampil untuk Anda, tim Anda, dan {0}.`, `Scores are shown only for you, your team and {0}.`, `仅显示您、您的团队和{0}的得分。`, `スコアはあなた、あなたのチーム、{0}のみ表示されます。`, `تظهر الدرجات لك ولفريقك و{0} فقط.`, `Les scores ne s'affichent que pour vous, votre équipe et {0}.`, `Scores werden nur für Sie, Ihr Team und {0} angezeigt.`, `Las puntuaciones solo se muestran para usted, su equipo y {0}.`],
     [`Seluruh perusahaan`, `Whole company`, `全公司`, `全社`, `الشركة كلها`, `Toute l'entreprise`, `Ganzes Unternehmen`, `Toda la empresa`]
   ]
 };

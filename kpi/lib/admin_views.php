@@ -88,8 +88,20 @@ function adm_members_url(string $status, string $extra = ''): string
 const ADM_ROLE_HINTS = [
     'anggota'   => 'Melihat dan mengisi KPI sendiri serta tim di bawahnya, dan menyetujui realisasi bawahan langsung.',
     'pemantau'  => 'Seperti anggota biasa, ditambah bisa melihat KPI dan skor semua anggota di seluruh perusahaan tanpa bisa mengubahnya. Cocok untuk HR atau auditor.',
-    'pengelola' => 'Seperti CEO: bisa melihat semua anggota, menetapkan dan mengubah KPI siapa pun, mengatur struktur organisasi, dan mengubah pengaturan aplikasi.',
+    'pengelola' => 'Menetapkan dan mengubah KPI semua anggota di satu divisi atau unit, termasuk kepalanya. Tidak bisa mengubah data anggota atau pengaturan aplikasi.',
+    'superuser' => 'Seperti CEO: melihat semua anggota, menetapkan dan mengubah KPI siapa pun di seluruh perusahaan, mengatur struktur organisasi, dan mengubah pengaturan aplikasi. Cocok untuk divisi atau unit yang menyusun KPI perusahaan.',
 ];
+
+/** Nama wilayah (divisi atau unit) dari id kepalanya, mis. "Divisi Operasional". */
+function adm_area_name(?int $headId): string
+{
+    $users = kpi_all_users();
+    if ($headId === null || !isset($users[$headId])) {
+        return '';
+    }
+    $head = $users[$headId];
+    return $head['dept'] !== '' ? $head['dept'] : $head['name'];
+}
 
 /** Label role di daftar anggota. CEO selalu punya semua hak. */
 function adm_role_pill(array $u): string
@@ -97,8 +109,10 @@ function adm_role_pill(array $u): string
     if ($u['level'] === 'ceo') {
         return adm_pill(kpi_t('Semua hak (CEO)'), 'sys');
     }
-    $r = kpi_role($u);
-    return adm_pill(kpi_t(KPI_ROLES[$r]), ['anggota' => '', 'pemantau' => 'infra', 'pengelola' => 'sys'][$r]);
+    $r    = kpi_role($u);
+    $pill = adm_pill(kpi_t(KPI_ROLES[$r]), ['anggota' => '', 'pemantau' => 'infra', 'pengelola' => 'ok', 'superuser' => 'sys'][$r]);
+    $area = adm_area_name(kpi_role_area($u));
+    return $r === 'pengelola' && $area !== '' ? $pill . '<div class="muted small">' . h($area) . '</div>' : $pill;
 }
 
 /** Panah "kembali" yang ikut berbalik arah pada tulisan kanan-ke-kiri. */
@@ -518,7 +532,8 @@ function adm_user_form(array $ctx, array $users, ?array $u): string
                 'hint' => $u ? '' : kpi_t('Bila kosong, dibuat dari nama. Contoh: siti.rahma')])
         . adm_input($u ? kpi_t('Password baru') : kpi_t('Password'), 'password', '', ['type' => 'password', 'minlength' => 4, 'required' => !$u,
                 'hint' => $u ? kpi_t('Kosongkan bila tidak ingin mengganti password.') : kpi_t('Minimal {0} karakter.', 4)])
-        . '</div>' . adm_role_field($u, (string)$val('role', $u ? kpi_role($u) : 'anggota'))
+        . '</div>' . adm_role_field($u, (string)$val('role', $u ? kpi_role($u) : 'anggota'),
+                (string)$val('role_scope', $u && $u['role_scope'] !== null && kpi_area_valid((int)$u['role_scope']) ? (string)$u['role_scope'] : ''))
         . '<div class="actions"><button class="btn primary" type="submit">' . ht('Simpan') . '</button>'
         . '<a class="btn" href="' . $list . '">' . ht('Batal') . '</a></div></form>';
 
@@ -550,7 +565,7 @@ function adm_user_form(array $ctx, array $users, ?array $u): string
 }
 
 /** Pilihan role di formulir anggota. CEO tidak bisa dipilihkan role karena sudah punya semua hak. */
-function adm_role_field(?array $u, string $cur): string
+function adm_role_field(?array $u, string $cur, string $scope = ''): string
 {
     if ($u && $u['level'] === 'ceo') {
         return '<fieldset><legend>' . ht('Role') . '</legend><p class="muted">'
@@ -564,8 +579,39 @@ function adm_role_field(?array $u, string $cur): string
     foreach (KPI_ROLES as $key => $label) {
         $html .= '<label class="check"><input type="radio" name="role" value="' . h($key) . '"' . ($key === $cur ? ' checked' : '') . '>'
             . '<span><b>' . ht($label) . '</b><small>' . ht(ADM_ROLE_HINTS[$key]) . '</small></span></label>';
+        if ($key === 'pengelola') {
+            $html .= adm_area_select($u, $scope);
+        }
     }
     return $html . '</fieldset>';
+}
+
+/** Pilihan divisi atau unit untuk Pengelola KPI. Disembunyikan (CSS) bila role lain yang dipilih. */
+function adm_area_select(?array $u, string $scope): string
+{
+    $users = kpi_all_users();
+    $own   = $u ? adm_area_name(kpi_division_of($u)) : '';
+    $html  = '<label class="field area-pick"><span>' . ht('Divisi atau unit yang dikelola') . '</span><select name="role_scope">'
+        . '<option value="">' . ($own !== '' ? ht('Divisinya sendiri ({0})', $own) : ht('Divisi anggota ini sendiri')) . '</option>';
+    foreach (['div' => 'Divisi', 'unit' => 'Unit'] as $lvl => $group) {
+        $opts = [];
+        foreach ($users as $p) {
+            if ($p['level'] === $lvl) {
+                $opts[adm_area_name((int)$p['id']) . "\0" . $p['id']] = $p;
+            }
+        }
+        if (!$opts) {
+            continue;
+        }
+        ksort($opts, SORT_NATURAL | SORT_FLAG_CASE);
+        $html .= '<optgroup label="' . ht($group) . '">';
+        foreach ($opts as $p) {
+            $html .= '<option value="' . (int)$p['id'] . '"' . ((string)$p['id'] === $scope ? ' selected' : '') . '>'
+                . h(adm_area_name((int)$p['id']) . ' (' . $p['name'] . ')') . '</option>';
+        }
+        $html .= '</optgroup>';
+    }
+    return $html . '</select><span class="hint">' . ht('Pengelola KPI bisa mengatur KPI semua anggota di wilayah ini, termasuk kepalanya.') . '</span></label>';
 }
 
 function adm_view_settings(array $ctx): string
