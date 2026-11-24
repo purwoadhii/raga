@@ -123,15 +123,28 @@ function descendants(id){const out=[];const walk=(p,d)=>childrenUsers(p).forEach
 function ancestors(id){const out=[];let u=userById(id);const seen=new Set();while(u&&u.parentId&&!seen.has(u.id)){seen.add(u.id);u=userById(u.parentId);if(u)out.push(u)}return out}
 const isAncestor=(a,b)=>ancestors(b).some(x=>x.id===a);
 /* Role dari sysAdmin: Pemantau melihat semua anggota, Pengelola KPI juga bisa mengatur seperti CEO. */
-const ROLE_NAMES={pemantau:N_('Pemantau'),pengelola:N_('Pengelola KPI')};
-const viewAll=u=>!!u&&(u.level==='ceo'||u.role==='pemantau'||u.role==='pengelola');
-const canManage=u=>!!u&&(u.level==='ceo'||u.role==='pengelola');
-const inScope=(v,u)=>v===u||isAncestor(v,u)||viewAll(userById(v));
+/* Role dari sysAdmin: Pemantau melihat semua anggota, Pengelola KPI mengatur KPI satu divisi atau unit,
+   Superuser mengatur semuanya seperti CEO. */
+const ROLE_NAMES={pemantau:N_('Pemantau'),pengelola:N_('Pengelola KPI'),superuser:N_('Superuser')};
+const viewAll=u=>!!u&&(u.level==='ceo'||u.role==='pemantau'||u.role==='superuser');
+const canManage=u=>!!u&&(u.level==='ceo'||u.role==='superuser');
+/* Wilayah Pengelola KPI (kepala divisi atau unit), dikirim server untuk pengguna yang sedang masuk. */
+const areaHead=u=>u&&u.id===S.meId&&S.areaId?userById(S.areaId)||null:null;
+const areaName=h=>h?(h.dept||h.name):'';
+const inArea=(v,id)=>{const h=areaHead(v);return !!h&&(h.id===id||isAncestor(h.id,id))};
+/* Wilayah yang berada di luar tim sendiri (bila wilayahnya tim sendiri, tidak perlu pilihan cakupan). */
+const areaExtra=u=>{const h=areaHead(u);return h&&h.id!==u.id&&!isAncestor(u.id,h.id)?h:null};
+const inScope=(v,u)=>v===u||isAncestor(v,u)||viewAll(userById(v))||inArea(userById(v),u);
 /* Bukan CEO tetapi boleh melihat seluruh perusahaan: halaman tim, pohon, dan laporan bisa memilih cakupan. */
-const wideUser=u=>viewAll(u)&&u.level!=='ceo';
+const wideUser=u=>(viewAll(u)&&u.level!=='ceo')||!!areaExtra(u);
 const wideOn=u=>wideUser(u)&&(P.wide!=='team'||(!childrenUsers(u.id).length&&P.page==='team'));
-function everyone(){const out=[];S.users.filter(x=>!x.parentId).forEach(r=>{r._d=1;out.push(r);descendants(r.id).forEach(c=>{c._d+=1;out.push(c)})});return out}
-const wideSel=u=>wideUser(u)?`<select class="inline" id="wide" aria-label="${tx('Cakupan')}"><option value="team" ${P.wide==='team'?'selected':''}>${childrenUsers(u.id).length?tx('Tim saya'):tx('Saya sendiri')}</option><option value="all" ${P.wide!=='team'?'selected':''}>${tx('Seluruh perusahaan')}</option></select>`:'';
+function subtree(roots){const out=[];roots.forEach(r=>{r._d=1;out.push(r);descendants(r.id).forEach(c=>{c._d+=1;out.push(c)})});return out}
+const everyone=()=>subtree(S.users.filter(x=>!x.parentId));
+/* Cakupan luas: semua orang (Pemantau, Superuser) atau wilayah kelola (Pengelola KPI). */
+const wideTop=u=>viewAll(u)?S.users.filter(x=>!x.parentId):[areaExtra(u)].filter(Boolean);
+const wideList=u=>subtree(wideTop(u));
+const wideName=u=>viewAll(u)?tx('Seluruh perusahaan'):esc(areaName(areaExtra(u)));
+const wideSel=u=>wideUser(u)?`<select class="inline" id="wide" aria-label="${tx('Cakupan')}"><option value="team" ${P.wide==='team'?'selected':''}>${childrenUsers(u.id).length?tx('Tim saya'):tx('Saya sendiri')}</option><option value="all" ${P.wide!=='team'?'selected':''}>${wideName(u)}</option></select>`:'';
 const kpisOf=uid=>S.kpis.filter(k=>k.ownerId===uid);
 const childKpis=id=>S.kpis.filter(k=>k.parentId===id);
 function decOf(k){if(INT_SET.has(String(k.unit||'').toLowerCase()))return 0;if(k.unit==='%')return 1;return k.target<100?1:0}
@@ -155,7 +168,7 @@ function rating(s){if(s==null)return{key:'na',label:tx('Belum ada data')};if(s>=
 const pill=s=>{const r=rating(s);return `<span class="pill ${r.key}">${r.label}</span>`};
 const weightSum=id=>kpisOf(id).reduce((a,k)=>a+(+k.weight||0),0);
 function pendingFor(id){const out=[];childrenUsers(id).forEach(u=>kpisOf(u.id).forEach(k=>{const a=S.actuals[k.id]||{};Object.keys(a).forEach(m=>{if(a[m].status==='submitted')out.push({u,k,m:+m,e:a[m]})})}));return out}
-const canDef=(viewer,owner)=>canManage(viewer)||isAncestor(viewer.id,owner);
+const canDef=(viewer,owner)=>canManage(viewer)||isAncestor(viewer.id,owner)||inArea(viewer,owner);
 const lvlName=l=>LV[l]?tx(LV[l].label):l;
 const lvlLabel=u=>lvlName(u.level);
 const roleLabel=u=>ROLE_NAMES[u.role]?tx(ROLE_NAMES[u.role]):'';
@@ -242,13 +255,13 @@ function viewLogin(){
   </div></section></div>`}
 
 /* ===== Shell ===== */
-function navItems(u){const hasTeam=childrenUsers(u.id).length>0;const pend=pendingFor(u.id).length;const all=viewAll(u);
-  return [['home',tx('Beranda')],['mine',tx('KPI Saya')],(hasTeam||all)&&['team',hasTeam?tx('Tim Saya'):tx('Semua Anggota')],['tree',tx('Pohon KPI')],['org',tx('Struktur Organisasi')],hasTeam&&['approve',tx('Persetujuan'),pend],(hasTeam||all)&&['report',tx('Laporan')],['settings',tx('Pengaturan')]].filter(Boolean)}
+function navItems(u){const hasTeam=childrenUsers(u.id).length>0;const pend=pendingFor(u.id).length;const all=viewAll(u)||!!areaExtra(u);
+  return [['home',tx('Beranda')],['mine',tx('KPI Saya')],(hasTeam||all)&&['team',hasTeam?tx('Tim Saya'):viewAll(u)?tx('Semua Anggota'):tx('Wilayah Kelola')],['tree',tx('Pohon KPI')],['org',tx('Struktur Organisasi')],hasTeam&&['approve',tx('Persetujuan'),pend],(hasTeam||all)&&['report',tx('Laporan')],['settings',tx('Pengaturan')]].filter(Boolean)}
 function shell(pg){const u=me();
   return `<div class="app"><aside class="side">
     <div class="brand">${logoImg('logo-img',0,'')}<div style="min-width:0"><b>Key Performance Indicator</b><span>${esc(S.company)}</span></div><button class="btn sm ghost out" data-act="logout" aria-label="${tx('Keluar')}">${ico('out')}</button></div>
     <nav class="nav">${navItems(u).map(([k,l,b])=>`<button class="${P.page===k||(k==='team'&&P.page==='person')?'on':''}" data-act="go" data-page="${k}">${ico(k)}<span>${l}</span>${b?`<span class="badge">${b}</span>`:''}</button>`).join('')}</nav>
-    <div class="me-box">${av(u)}<div class="who"><b>${esc(u.name)}</b><span>${lvlLabel(u)}${roleLabel(u)?' · '+roleLabel(u):''}</span></div><button class="btn sm ghost" data-act="logout" title="${tx('Keluar')}" aria-label="${tx('Keluar')}">${ico('out')}</button></div>
+    <div class="me-box">${av(u)}<div class="who"><b>${esc(u.name)}</b><span>${lvlLabel(u)}${roleLabel(u)?` · <span style="white-space:nowrap">${roleLabel(u)}</span>`:''}</span></div><button class="btn sm ghost" data-act="logout" title="${tx('Keluar')}" aria-label="${tx('Keluar')}">${ico('out')}</button></div>
   </aside><main class="main">
     <header class="top"><div><div class="eyebrow">${pg.eyebrow||''}</div><h1>${pg.title}</h1></div>
     <div class="top-tools">${pg.noPeriod?'':`<label class="period">${tx('Periode')}<select class="inline" id="period">${MONF.map((n,i)=>`<option value="${i}" ${i===P.month?'selected':''}>${monY(i)}</option>`).join('')}</select></label>`}${langPicker('top-lang')}</div></header>
@@ -344,13 +357,13 @@ function pagePerson(){
 
 /* ===== Halaman: Tim ===== */
 function pageTeam(){
-  const u=me(),m=P.month,wide=wideOn(u),subs=wide?everyone():descendants(u.id),hasTeam=childrenUsers(u.id).length>0;
+  const u=me(),m=P.month,wide=wideOn(u),subs=wide?wideList(u):descendants(u.id),hasTeam=childrenUsers(u.id).length>0,all=viewAll(u),edit=canManage(u)||!all;
   const rows=subs.map(p=>{const s=score(p.id,m),ws=weightSum(p.id);return `<tr class="clickrow team-row" data-act="person" data-id="${p.id}" data-q="${esc((p.name+' '+p.title+' '+p.dept).toLowerCase())}" style="--d:${p._d-1}">
     <td><div class="pname">${av(p)}<div><b>${esc(p.name)}</b><span>${esc(p.title)}</span></div></div></td><td><span class="tag">${lvlLabel(p)}</span></td>
     <td class="r num">${kpisOf(p.id).length}${ws!==100?` <span class="tag gold" title="${tx('Total bobot')}">${ws}%</span>`:''}</td><td class="r num"><b>${fs(s)}</b></td><td class="r num">${fs(ytd(p.id,m))}</td><td>${pill(s)}</td></tr>`}).join('');
-  const html=`<div class="card"><div class="card-h"><div><h2>${wide?tx('Semua anggota'):tx('Anggota tim')} (${subs.length})</h2><p>${wide?tx('Role Anda ({0}) bisa melihat KPI semua anggota.',roleLabel(u))+' ':''}${wide&&!canManage(u)?tx('Klik nama untuk melihat KPI-nya.'):tx('Klik nama untuk melihat dan mengatur KPI-nya.')}</p></div><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">${hasTeam?wideSel(u):''}<input class="search" id="team-q" type="search" placeholder="${tx('Cari nama atau unit…')}" aria-label="${tx('Cari anggota')}"></div></div>
+  const html=`<div class="card"><div class="card-h"><div><h2>${wide?(all?tx('Semua anggota'):tx('Anggota {0}',wideName(u))):tx('Anggota tim')} (${subs.length})</h2><p>${wide?(all?tx('Role Anda ({0}) bisa melihat KPI semua anggota.',roleLabel(u)):tx('Role Anda ({0}) bisa mengatur KPI semua anggota di {1}.',roleLabel(u),wideName(u)))+' ':''}${wide&&!edit?tx('Klik nama untuk melihat KPI-nya.'):tx('Klik nama untuk melihat dan mengatur KPI-nya.')}</p></div><div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">${hasTeam?wideSel(u):''}<input class="search" id="team-q" type="search" placeholder="${tx('Cari nama atau unit…')}" aria-label="${tx('Cari anggota')}"></div></div>
   <div class="tbl-wrap"><table><thead><tr><th>${tx('Nama')}</th><th>${tx('Level')}</th><th class="r">KPI</th><th class="r">${tx('Skor {0}',MON[m])}</th><th class="r">${tx('Rata-rata')}</th><th>${tx('Status')}</th></tr></thead><tbody id="team-body">${rows}</tbody></table></div></div>`;
-  return {eyebrow:wide?esc(S.company):esc(u.dept),title:wide?tx('Semua Anggota'):tx('Tim Saya'),html};
+  return {eyebrow:wide?esc(S.company):esc(u.dept),title:wide?(all?tx('Semua Anggota'):tx('Wilayah Kelola')):tx('Tim Saya'),html};
 }
 
 /* ===== Halaman: Pohon KPI ===== */
@@ -362,7 +375,7 @@ function pageTree(){
     <div class="kn"><b>${esc(k.name)}</b><span>${esc(o?.name||'')} · ${lvlLabel(o||{level:''})}${k.rollup!=='manual'?` · <span style="color:var(--accent)">${k.rollup==='sum'?tx('jumlah otomatis'):tx('rata-rata otomatis')}</span>`:''}</span></div>
     <div class="figs"><div><small>${tx('Target')}</small><b class="num">${fmt(k.target,d)}</b> <span class="muted small">${esc(k.unit)}</span></div><div><small>${tx('Realisasi')}</small><b class="num">${fmt(actual(k,m),d)}</b></div><div style="min-width:64px"><small>${tx('Capaian')}</small><b class="num" style="color:var(--${r.key==='na'?'muted':r.key})">${a==null?'–':fmt(a,0)+'%'}</b></div></div></div></summary>
     ${kids.map(c=>node(c,depth+1)).join('')}</details>`};
-  const wide=wideOn(u),top=wide?S.users.filter(x=>!x.parentId):[u];
+  const wide=wideOn(u),top=wide?wideTop(u):[u];
   const roots=top.flatMap(x=>kpisOf(x.id));
   const ups=wide?[]:roots.map(k=>k.parentId&&kpiById(k.parentId)).filter(Boolean);
   const html=`<div class="card"><div class="card-h"><div><h2>${tx('Penurunan KPI dari {0}',top.map(x=>esc(x.name)).join(', '))}</h2><p>${tx('Setiap KPI diturunkan ke bawahan. KPI bertanda "otomatis" menjumlahkan atau merata-ratakan realisasi KPI turunannya. Klik baris untuk buka/tutup.')}</p></div>
@@ -379,7 +392,7 @@ function pageOrg(){
     return `<div class="pc ${cls} ${sc?'click':''}" ${sc?`data-act="person" data-id="${u.id}"`:''}>${cls==='ceo'||cls==='div'?`<span class="lvl">${lvlLabel(u)}</span>`:''}${av(u)}<div class="t"><b>${esc(u.name)}</b><span>${esc(u.title)}</span></div>
     ${sc?`<span class="sc ${rating(s).key} num">${fs(s)}</span>`:''}${isCeo&&(meCeo||u.level!=='ceo')?`<button class="edit" data-act="user-edit" data-id="${u.id}" aria-label="${tx('Ubah {0}',esc(u.name))}">${ico('edit')}</button>`:''}</div>`};
   const roots=S.users.filter(u=>!u.parentId);
-  let html=`<div class="card"><div class="card-h"><div><h2>${esc(S.company)}</h2><p>${tx('{0} orang · {1} divisi · {2} unit.',S.users.length,S.users.filter(u=>u.level==='div').length,S.users.filter(u=>u.level==='unit').length)} ${viewAll(v)?'':tx('Skor hanya tampil untuk Anda dan tim Anda.')}</p></div>
+  let html=`<div class="card"><div class="card-h"><div><h2>${esc(S.company)}</h2><p>${tx('{0} orang · {1} divisi · {2} unit.',S.users.length,S.users.filter(u=>u.level==='div').length,S.users.filter(u=>u.level==='unit').length)} ${viewAll(v)?'':areaExtra(v)?tx('Skor hanya tampil untuk Anda, tim Anda, dan {0}.',esc(areaName(areaExtra(v)))):tx('Skor hanya tampil untuk Anda dan tim Anda.')}</p></div>
   ${isCeo?`<button class="btn primary" data-act="user-new">${ico('plus')} ${tx('Tambah anggota')}</button>`:''}</div><div style="overflow-x:auto"><div class="org">`;
   roots.forEach(r=>{const divs=childrenUsers(r.id);
     html+=`<div class="org-top">${pc(r,'ceo')}</div>${divs.length?`<div class="org-stem"></div><div class="org-divs" style="--n:${Math.max(1,divs.length)}">${divs.map(d=>{
@@ -403,7 +416,7 @@ function pageApprove(){
 }
 
 /* ===== Halaman: Laporan ===== */
-function reportPeople(u){return wideOn(u)?everyone():[u,...descendants(u.id)]}
+function reportPeople(u){return wideOn(u)?wideList(u):[u,...descendants(u.id)]}
 function pageReport(){
   const u=me(),m=P.month,lv=P.rlv||'all',all=reportPeople(u);
   const list=all.filter(p=>lv==='all'||p.level===lv);

@@ -194,10 +194,13 @@ try {
                         'username' => $_POST['username'] ?? '',
                         'password' => $_POST['password'] ?? '',
                         'parentId' => $_POST['parentId'] ?? '',
-                        'role'     => isset($_POST['role']) ? (string)$_POST['role'] : null,
+                        'role'      => isset($_POST['role']) ? (string)$_POST['role'] : null,
+                        'roleScope' => (string)($_POST['role_scope'] ?? ''),
                     ], true);
-                    $role = kpi_role(kpi_all_users()[$id] ?? []);
-                    kpi_admin_log($admin, 'user_save', "user=$id username=$username role=$role");
+                    $saved = kpi_all_users()[$id] ?? [];
+                    $role  = kpi_role($saved);
+                    $area  = $saved ? kpi_role_area($saved) : null;
+                    kpi_admin_log($admin, 'user_save', "user=$id username=$username role=$role" . ($area !== null ? " area=$area" : ''));
                     adm_flash('ok', kpi_t('Data anggota "{0}" sudah disimpan.', $username));
                     adm_go('p=anggota' . adm_status_q());
                     break;

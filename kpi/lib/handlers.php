@@ -165,6 +165,20 @@ function kpi_bootstrap(array $viewer): array
         }
     }
 
+    // Pengelola KPI: nama KPI atasan kepala wilayahnya, untuk pilihan "diturunkan dari KPI atasan".
+    $area = kpi_role_area($viewer);
+    $up   = $area !== null && $all[$area]['parent_id'] !== null ? (int)$all[$area]['parent_id'] : null;
+    $extra = [];
+    if ($up !== null && !in_array($up, $scope, true)) {
+        $st4 = $db->prepare('SELECT id, owner_id, name, parent_id FROM kpis WHERE owner_id = ? ORDER BY sort_order, id');
+        $st4->execute([$up]);
+        foreach ($st4->fetchAll() as $r) {
+            if (!isset($ids[(int)$r['id']])) {
+                $extra[] = kpi_public_kpi($r, false);
+            }
+        }
+    }
+
     $actuals = new stdClass();
     if ($ids) {
         $place3 = implode(',', array_fill(0, count($ids), '?'));
@@ -187,12 +201,14 @@ function kpi_bootstrap(array $viewer): array
 
     return [
         'meId'      => (string)$viewer['id'],
+        // Divisi atau unit yang dikelola Pengelola KPI (id kepalanya), selain itu null.
+        'areaId'    => ($area = kpi_role_area($viewer)) !== null ? (string)$area : null,
         'company'   => (string)kpi_setting('company', 'Perusahaan'),
         'cap'       => (float)kpi_setting('cap', 120),
         'year'      => $year,
         'demoMode'  => kpi_setting('demo_mode', '0') === '1',
         'users'     => $users,
-        'kpis'      => $kpis,
+        'kpis'      => array_merge($kpis, $extra),
         'actuals'   => $actuals,
     ];
 }
@@ -228,10 +244,19 @@ function kpi_user_save(array $in, bool $withRole = false): array
     }
     $users = kpi_all_users();
     $role  = null;
+    $scope = null;
     if ($withRole && array_key_exists('role', $in) && $in['role'] !== null) {
         $role = (string)$in['role'];
         if (!isset(KPI_ROLES[$role])) {
             throw new KpiApiError('Role tidak dikenal.');
+        }
+        // Pengelola KPI: divisi atau unit yang dikelola. Kosong berarti divisinya sendiri.
+        $raw = trim((string)($in['roleScope'] ?? ''));
+        if ($role === 'pengelola' && $raw !== '') {
+            $scope = ctype_digit($raw) ? (int)$raw : 0;
+            if (!kpi_area_valid($scope)) {
+                throw new KpiApiError('Divisi atau unit yang dikelola tidak ditemukan.');
+            }
         }
     }
 
@@ -258,7 +283,7 @@ function kpi_user_save(array $in, bool $withRole = false): array
         $up = $db->prepare('UPDATE users SET name=?, title=?, dept=?, username=? WHERE id=?');
         $up->execute([$name, $title, $dept, $username, $id]);
         if ($role !== null && $cur['level'] !== 'ceo') {
-            $db->prepare('UPDATE users SET role = ? WHERE id = ?')->execute([$role, $id]);
+            $db->prepare('UPDATE users SET role = ?, role_scope = ? WHERE id = ?')->execute([$role, $scope, $id]);
         }
         if ($pass !== '') {
             if (mb_strlen($pass) < 4) {
@@ -279,12 +304,13 @@ function kpi_user_save(array $in, bool $withRole = false): array
         if (mb_strlen($pass) < 4) {
             throw new KpiApiError('Password minimal 4 karakter.');
         }
-        $up = $db->prepare('INSERT INTO users (name, title, level, role, parent_id, dept, username, password_hash) VALUES (?,?,?,?,?,?,?,?)');
+        $up = $db->prepare('INSERT INTO users (name, title, level, role, role_scope, parent_id, dept, username, password_hash) VALUES (?,?,?,?,?,?,?,?,?)');
         $up->execute([
             $name,
             $title ?: ucfirst($level),
             $level,
             $role ?? 'anggota',
+            $scope,
             $parentId,
             $dept ?: $users[$parentId]['dept'],
             $username,
@@ -309,6 +335,8 @@ function kpi_user_delete(int $id): void
         }
     }
     db()->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
+    // Pengelola KPI yang mengelola wilayah orang ini kembali ke divisinya sendiri.
+    db()->prepare('UPDATE users SET role_scope = NULL WHERE role_scope = ?')->execute([$id]);
     kpi_all_users(true);
 }
 

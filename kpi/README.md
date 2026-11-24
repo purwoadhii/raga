@@ -146,13 +146,14 @@ Selain level, setiap anggota punya **role** yang diatur sysAdmin di menu **Anggo
 | --- | --- |
 | Anggota biasa (bawaan) | Sesuai levelnya seperti tabel di atas |
 | Pemantau | Ditambah melihat KPI, skor, pohon KPI, dan laporan semua anggota di seluruh perusahaan, tanpa bisa mengubahnya. Cocok untuk HR atau auditor |
-| Pengelola KPI | Seperti CEO: melihat semua anggota, menetapkan dan mengubah KPI siapa pun, menambah dan mengubah anggota di Struktur Organisasi, dan mengubah pengaturan perusahaan. Data akun CEO tetap hanya bisa diubah CEO sendiri |
+| Pengelola KPI | Ditambah menetapkan dan mengubah KPI semua anggota di **satu divisi atau unit** yang dipilih sysAdmin, termasuk kepalanya. Bila tidak dipilih, wilayahnya divisi anggota itu sendiri. Tidak bisa mengubah data anggota atau pengaturan |
+| Superuser | Seperti CEO: melihat semua anggota, menetapkan dan mengubah KPI siapa pun di seluruh perusahaan, menambah dan mengubah anggota di Struktur Organisasi, dan mengubah pengaturan perusahaan. Cocok untuk divisi atau unit yang menyusun KPI perusahaan. Data akun CEO tetap hanya bisa diubah CEO sendiri |
 
 - CEO selalu punya semua hak, jadi tidak diberi role.
 - Persetujuan realisasi tetap oleh atasan langsung, apa pun role-nya. Realisasi yang langsung tercatat disetujui tetap hanya milik CEO.
 - Role hanya bisa diubah di `/sysAdmin`, tidak dari dalam aplikasi.
-- Pemantau dan Pengelola KPI yang punya tim bisa memilih cakupan **Tim saya** atau **Seluruh perusahaan** di halaman Tim, Pohon KPI, dan Laporan.
-- Pemasangan lama otomatis mendapat kolom role saat halaman pertama kali dibuka setelah pembaruan. Semua anggota mulai sebagai Anggota biasa.
+- Pemantau, Pengelola KPI, dan Superuser yang punya tim bisa memilih cakupan **Tim saya** atau wilayahnya (seluruh perusahaan, atau divisi/unit yang dikelola) di halaman Tim, Pohon KPI, dan Laporan.
+- Pemasangan lama otomatis mendapat kolom yang dibutuhkan saat halaman pertama kali dibuka setelah pembaruan.
 
 ## Keamanan
 
