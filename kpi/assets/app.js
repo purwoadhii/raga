@@ -48,7 +48,9 @@ let S=null, cache=new Map();
 const BOOT=window.__BOOT__||{};
 /** Tampilan yang diatur sysAdmin di menu Tampilan: logo dan gambar halaman masuk. */
 const UI=Object.assign({logo:'assets/logo.png',logoOwn:false,art:null,showArt:true},BOOT.ui||{});
-const logoImg=(cls,size,alt)=>`<img class="${cls}${UI.logoOwn?' own':''}" src="${esc(UI.logo)}" alt="${alt}"${size?` width="${size}" height="${size}"`:''}>`;
+if(!UI.loginLogo){UI.loginLogo=UI.logo;UI.loginLogoOwn=UI.logoOwn}
+/* login=true: logo halaman masuk (bisa berbeda dari logo perusahaan di menu Tampilan sysAdmin). */
+const logoImg=(cls,size,alt,login)=>`<img class="${cls}${(login?UI.loginLogoOwn:UI.logoOwn)?' own':''}" src="${esc(login?UI.loginLogo:UI.logo)}" alt="${alt}"${size?` width="${size}" height="${size}"`:''}>`;
 let P={page:'home',month:new Date().getMonth(),view:null,lang:'id',rlv:'all',wide:'all'};
 function loadPref(){try{const p=JSON.parse(store.get(PREF)||'null');if(p){delete p.lang;Object.assign(P,p)}}catch(e){}}
 function savePref(){store.set(PREF,JSON.stringify({page:P.page,month:P.month,view:P.view,rlv:P.rlv,wide:P.wide}))}
@@ -241,7 +243,7 @@ function viewLogin(){
   <section class="login-side"><div class="lg-card">
     ${langPicker('lg-lang')}
     <form class="lg-form" id="lg-form" autocomplete="off" novalidate>
-      <div class="lg-brand">${logoImg('lg-logo',58,'Logo')}<span>Key Performance Indicator</span></div>
+      <div class="lg-brand">${logoImg('lg-logo',58,'Logo',true)}<span>Key Performance Indicator</span></div>
       <h1>${t('welcome')}</h1><p class="sub">${t('sub')}</p>
       <div class="lg-field"><label for="lg-user">${t('user')}</label><div class="lg-in">${ico('user')}<input id="lg-user" type="text" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="${t('userPh')}"></div></div>
       <div class="lg-field"><label for="lg-pin">${t('pass')}</label><div class="lg-in">${ico('lock')}<input id="lg-pin" type="password" autocomplete="off" placeholder="${t('passPh')}"><button type="button" data-act="eye" aria-label="${t('show')}">${ico('eye')}</button></div></div>
