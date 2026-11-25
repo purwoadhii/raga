@@ -143,10 +143,10 @@ async function main() {
     lines.push(
       '',
       'Akun contoh untuk masuk:',
-      '  CEO            budi.santoso    password 1111',
-      '  Division Head  rina.wijaya     password 2222',
-      '  Unit Head      agus.prasetyo   password 3333',
-      '  Staff          dewi.lestari    password 4444'
+      '  CEO            budi.santoso    password 12345678',
+      '  Division Head  rina.wijaya     password 12345678',
+      '  Unit Head      agus.prasetyo   password 12345678',
+      '  Staff          dewi.lestari    password 12345678'
     );
   } else if (!res.reused) {
     lines.push('', `Masuk dengan username "${o.ceo_user}" dan password yang baru Anda buat.`);

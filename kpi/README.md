@@ -30,7 +30,7 @@ Semua akun admin yang aktif bisa masuk ke kedua halaman, apa pun perannya. Isi m
 
 | Halaman | Menu |
 | --- | --- |
-| **sysAdmin** | Ringkasan, Anggota dengan submenu Aktif dan Tidak aktif (tambah, ubah, atur role, nonaktifkan, hapus, ganti password, buka kunci login), Pengaturan aplikasi, Tampilan, Akun admin, Catatan aktivitas |
+| **sysAdmin** | Ringkasan, Anggota dengan submenu Aktif dan Tidak aktif (tambah, ubah, atur role, nonaktifkan, hapus, ganti password, ganti password semua anggota sekaligus, buka kunci login), Pengaturan aplikasi, Tampilan, Akun admin, Catatan aktivitas |
 | **infraAdmin** | Status server (PHP, database, HTTPS, izin file, ruang disk), Cadangan database (.sql), Mode pemeliharaan, Catatan aktivitas dan pembersihannya |
 
 **Akun admin bawaan.** Saat aplikasi disiapkan, dua akun dibuat otomatis:
@@ -112,10 +112,10 @@ Hanya ada bila Anda memasang dengan data contoh:
 
 | Level | Username | Password |
 | --- | --- | --- |
-| CEO | `budi.santoso` | `1111` |
-| Division Head | `rina.wijaya` | `2222` |
-| Unit Head | `agus.prasetyo` | `3333` |
-| Staff | `dewi.lestari` | `4444` |
+| CEO | `budi.santoso` | `12345678` |
+| Division Head | `rina.wijaya` | `12345678` |
+| Unit Head | `agus.prasetyo` | `12345678` |
+| Staff | `dewi.lestari` | `12345678` |
 
 Sebelum dipakai sungguhan, ganti semua password dan matikan tampilan akun contoh di menu **Pengaturan**.
 

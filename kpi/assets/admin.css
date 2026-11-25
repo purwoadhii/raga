@@ -142,6 +142,10 @@ fieldset:not(:has(input[name=role][value=pengelola]:checked)) .area-pick{display
 .confirm[open]>summary{display:none}
 .confirm-box{margin:0;border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--bg)}
 .confirm-box p{font-weight:600;flex:1 1 220px}
+.confirm-box.pw-all{flex-direction:column;align-items:stretch;gap:14px}
+.pw-all .field{max-width:420px}
+.pw-all .field input{background:var(--surface)}
+.pw-all .actions{margin:0}
 
 /* Lain-lain */
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:0}
