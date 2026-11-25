@@ -471,6 +471,19 @@ function adm_view_users(array $ctx): string
         . ($rows ?: '<tr><td colspan="8" class="muted">' . h($empty) . '</td></tr>')
         . '</tbody></table></div><p class="muted small foot">' . ht('{0} anggota ditampilkan.', kpi_num($n)) . '</p></section>';
 
+    // Satu password untuk semua anggota
+    $html .= '<section class="card" id="pw-all"><div><h2>' . ht('Ganti password semua anggota') . '</h2>'
+        . '<p class="muted">' . ht('Memberi satu password yang sama untuk semua akun anggota, aktif maupun tidak aktif ({0} akun). Akun admin tidak ikut berubah. Setelah itu, beri tahu anggota password barunya.', kpi_num(count($users))) . '</p></div>'
+        . '<details class="confirm"><summary class="btn danger-soft">' . ht('Ganti password semua anggota') . '</summary>'
+        . '<form method="post" action="' . ADM_SELF . '" class="confirm-box pw-all">' . adm_csrf_field($csrf)
+        . '<input type="hidden" name="_act" value="user_password_all"><input type="hidden" name="_back" value="anggota">'
+        . ($status !== '' ? '<input type="hidden" name="_status" value="' . h($status) . '">' : '')
+        . adm_input(kpi_t('Password baru untuk semua anggota'), 'new_pass', '', ['required' => true, 'minlength' => 4, 'maxlength' => 72,
+            'hint' => kpi_t('Minimal 4 karakter. Tulisannya terlihat supaya mudah diperiksa sebelum disimpan.')])
+        . '<label class="check"><input type="checkbox" name="confirm" value="1" required>'
+        . '<span><b>' . ht('Saya mengerti') . '</b><small>' . ht('Password lama semua anggota tidak bisa dipakai lagi.') . '</small></span></label>'
+        . '<div class="actions"><button class="btn danger" type="submit">' . ht('Ganti semua password') . '</button></div></form></details></section>';
+
     $locked = kpi_locked_list();
     if ($locked) {
         $lr = '';

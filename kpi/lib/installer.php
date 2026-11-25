@@ -7,10 +7,10 @@
 function kpi_demo_accounts(): array
 {
     return [
-        ['level' => 'CEO', 'username' => 'budi.santoso', 'password' => '1111'],
-        ['level' => 'Division Head', 'username' => 'rina.wijaya', 'password' => '2222'],
-        ['level' => 'Unit Head', 'username' => 'agus.prasetyo', 'password' => '3333'],
-        ['level' => 'Staff', 'username' => 'dewi.lestari', 'password' => '4444'],
+        ['level' => 'CEO', 'username' => 'budi.santoso', 'password' => '12345678'],
+        ['level' => 'Division Head', 'username' => 'rina.wijaya', 'password' => '12345678'],
+        ['level' => 'Unit Head', 'username' => 'agus.prasetyo', 'password' => '12345678'],
+        ['level' => 'Staff', 'username' => 'dewi.lestari', 'password' => '12345678'],
     ];
 }
 

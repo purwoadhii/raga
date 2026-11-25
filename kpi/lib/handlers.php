@@ -218,6 +218,27 @@ function kpi_bootstrap(array $viewer): array
 /* ---------- Kelola anggota (dipakai API dan halaman admin) ---------- */
 
 /**
+ * Satu password yang sama untuk semua akun anggota (dari sysAdmin > Anggota).
+ * Akun contoh di halaman masuk ikut memakai password baru. Mengembalikan jumlah akun.
+ */
+function kpi_user_password_all(string $pass): int
+{
+    $db = db();
+    $db->prepare('UPDATE users SET password_hash = ?')->execute([password_hash($pass, PASSWORD_DEFAULT)]);
+    $list = json_decode((string)kpi_setting('demo_accounts', '[]'), true);
+    if (is_array($list) && $list) {
+        foreach ($list as &$a) {
+            if (is_array($a) && isset($a['password'])) {
+                $a['password'] = $pass;
+            }
+        }
+        unset($a);
+        kpi_set_setting('demo_accounts', json_encode($list, JSON_UNESCAPED_UNICODE));
+    }
+    return (int)$db->query('SELECT COUNT(*) FROM users')->fetchColumn();
+}
+
+/**
  * Menambah atau mengubah anggota. Mengembalikan [id, username].
  * $withRole: role ikut disimpan (hanya dari halaman sysAdmin); bila isian role tidak
  * dikirim, role yang lama tetap. Role CEO tidak diubah karena CEO sudah punya semua hak.

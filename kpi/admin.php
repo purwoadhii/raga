@@ -229,6 +229,24 @@ try {
                     adm_go('p=anggota' . adm_status_q());
                     break;
                 }
+                case 'user_password_all': {
+                    $need('sysadmin');
+                    $new = (string)($_POST['new_pass'] ?? '');
+                    if (mb_strlen($new) < 4) {
+                        throw new KpiApiError('Password minimal 4 karakter.');
+                    }
+                    if (strlen($new) > 72) {
+                        throw new KpiApiError('Password paling panjang 72 karakter.');
+                    }
+                    if (empty($_POST['confirm'])) {
+                        throw new KpiApiError('Centang "Saya mengerti" untuk melanjutkan.');
+                    }
+                    $n = kpi_user_password_all($new);
+                    kpi_admin_log($admin, 'password_semua', "anggota=$n");
+                    adm_flash('ok', kpi_t('Password {0} anggota sudah diganti. Beri tahu mereka password barunya.', kpi_num($n)));
+                    adm_go('p=anggota' . adm_status_q());
+                    break;
+                }
                 case 'user_unlock': {
                     $need('sysadmin');
                     $ident = (string)($_POST['ident'] ?? '');
